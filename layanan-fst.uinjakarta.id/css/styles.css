@@ -1,0 +1,154 @@
+:root {
+    --colorPrimaryNormal: #00b3bb;
+    --colorPrimaryDark: #00979f;
+    --colorPrimaryGlare: #00cdd7;
+    --colorPrimaryHalf: #80d9dd;
+    --colorPrimaryQuarter: #bfecee;
+    --colorPrimaryEighth: #dff5f7;
+    --colorPrimaryPale: #f3f5f7;
+    --colorPrimarySeparator: #f3f5f7;
+    --colorPrimaryOutline: #dff5f7;
+    --colorButtonNormal: #00b3bb;
+    --colorButtonHover: #00cdd7;
+    --colorLinkNormal: #00979f;
+    --colorLinkHover: #00cdd7;
+}
+
+.info_box {
+    width: 0 auto;
+    display: flex;
+    flex-direction: row;
+}
+
+.setting_content {
+    width: 0 auto;
+    display: flex;
+    flex-direction: row;
+}
+
+@media only screen and (max-width: 900px) {
+    .info_box {
+        flex-direction: column;
+    }
+
+    .setting_content {
+        flex-direction: column;
+    }
+  }
+
+#panduan {
+    cursor: pointer;
+}
+
+#panduanSection p {
+    text-align: justify;
+}
+
+#imgPanduan {
+    width: 100%;
+}
+
+#btnSimpan {
+    width: 200px;
+}
+
+#img_ttd {
+    width: 200px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.upload_dropZone {
+    color: #0f3c4b;
+    background-color: var(--colorPrimaryPale, #c8dadf);
+    outline: 2px dashed var(--colorPrimaryHalf, #c1ddef);
+    outline-offset: -12px;
+    transition:
+        outline-offset 0.2s ease-out,
+        outline-color 0.3s ease-in-out,
+        background-color 0.2s ease-out;
+}
+.upload_dropZone.highlight {
+    outline-offset: -4px;
+    outline-color: var(--colorPrimaryNormal, #0576bd);
+    background-color: var(--colorPrimaryEighth, #c8dadf);
+}
+.upload_svg {
+    fill: var(--colorPrimaryNormal, #0576bd);
+}
+.btn-upload {
+    color: #fff;
+    background-color: var(--colorPrimaryNormal);
+}
+.btn-upload:hover,
+.btn-upload:focus {
+    color: #fff;
+    background-color: var(--colorPrimaryGlare);
+}
+.upload_img {
+    width: calc(33.333% - (2rem / 3));
+    object-fit: contain;
+}
+
+/* #btnSandi {
+    background-color: #343A40;
+    color: white;
+    height: 40px;
+}
+
+#btnSandi:hover {
+    opacity: 80%;
+} */
+/* Table styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  table th,
+  table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+
+  /* Table header styling */
+  table th {
+    background-color: transparent;
+    color: #333;
+  }
+
+  /* Table row hover effect */
+  table tr:hover {
+    background-color: #f5f5f5;
+  }
+
+  /* Alternating row colors */
+  table tr:nth-child(even) {
+    background-color: transparent;
+  }
+
+  /* Table cell formatting */
+  table td {
+    font-size: 14px;
+  }
+
+  /* Table cell alignment */
+  table td.text-center {
+    text-align: center;
+  }
+
+  table td.text-right {
+    text-align: right;
+  }
+
+  /* Example styles for specific rows */
+  table tr.highlight {
+    background-color: #ffc107;
+    color: #333;
+  }
+
+  .info-box-cell {
+    width: 25%;
+    padding-right: 10px;
+  }
