@@ -13,3 +13,5 @@ npm-debug.log
 yarn-error.log
 db_web_pelayanan_verified.sql
 db_web_pelayanan_unverified.sql
+*.sql
+/database/seeders/*.php
