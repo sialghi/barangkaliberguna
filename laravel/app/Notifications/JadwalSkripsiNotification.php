@@ -31,7 +31,7 @@ class JadwalSkripsiNotification extends Mailable implements ShouldQueue
      */
     public function build()
     {
-        return $this->subject('Layanan Prodi Fakultas Sains dan Teknologi: Input Jadwal Sidang Skripsi Selesai')
+        return $this->subject('Layanan Prodi Fakultas Sains dan Teknologi: Input Jadwal Sidang Tugas Akhir Selesai')
                     ->markdown('emails.jadwal-skripsi');
     }
 }

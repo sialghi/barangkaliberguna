@@ -8,7 +8,7 @@
 
 @section('content_header')
    <div class="d-flex flex-row mb-4">
-      <h1>Daftar Sidang Skripsi</h1>
+      <h1>Daftar Sidang Tugas Akhir</h1>
       <i id="panduan" class="fas fa-question-circle ml-2 my-2" data-toggle="modal" data-target="#infoModal"></i>
    </div>
 @stop

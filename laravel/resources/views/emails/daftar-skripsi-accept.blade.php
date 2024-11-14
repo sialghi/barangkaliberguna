@@ -1,5 +1,5 @@
 @component('mail::message')
-# Pemberitahuan: Pendaftaran Sidang Skripsi Disetujui
+# Pemberitahuan: Pendaftaran Sidang Tugas Akhir Disetujui
 
 Yth.
 
@@ -18,8 +18,8 @@ Waktu: {{ explode(' ', $skripsiRequest->waktu_ujian)[1] }} <br>
 
 ------------------------------------------------------------ <br>
 
-Kami ingin memberitahukan bahwa pendaftaran sidang skripsi anda telah disetujui.
-Anda dapat mengakses website kami untuk melihat detail pendaftaran sidang skripsi dan menunggu kabar lebih lanjut.
+Kami ingin memberitahukan bahwa pendaftaran sidang tugas akhir anda telah disetujui.
+Anda dapat mengakses website kami untuk melihat detail pendaftaran sidang tugas akhir dan menunggu kabar lebih lanjut.
 
 Terima kasih,<br>
 {{ config('app.name') }}

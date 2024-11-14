@@ -8,7 +8,7 @@
 
 @section('content_header')
    <div class="d-flex flex-row">
-      <h1>Daftar Sidang Skripsi</h1>
+      <h1>Daftar Sidang Tugas Akhir</h1>
       <i id="panduan" class="fas fa-question-circle ml-2 my-2" data-toggle="modal" data-target="#infoModal"></i>
    </div>
    <hr>
@@ -66,14 +66,14 @@
     @if (array_intersect(['mahasiswa'], $userRole))
       @if ($semhasCount < 1)
          <div>
-            <span class="badge bg-danger text-sm mb-1 py-1"><i class="fas fa-exclamation-circle"></i> Anda belum memenuhi syarat untuk mendaftar sidang skripsi</span>
+            <span class="badge bg-danger text-sm mb-1 py-1"><i class="fas fa-exclamation-circle"></i> Anda belum memenuhi syarat untuk mendaftar sidang tugas akhir</span>
             <br>
             <span class="badge bg-warning text-sm mb-1 py-1"><i class="fas fa-exclamation-circle"></i> Harus telah selesai melaksanakan seminar hasil dan telah mendapatkan penilaian oleh seluruh dosen yang terlibat, status "Selesai" {{$semhasCount}}/1 </span>
          </div>
-         <x-adminlte-button label="Daftar Sidang Skripsi" theme="primary" icon="fas fa-user-edit" disabled/>
+         <x-adminlte-button label="Daftar Sidang Tugas Akhir" theme="primary" icon="fas fa-user-edit" disabled/>
          <br><br>
       @else
-         <x-adminlte-button label="Daftar Sidang Skripsi" theme="primary" icon="fas fa-user-edit" onclick="window.location.href = '{{ route('add.daftar.sidang.skripsi') }}';"/>
+         <x-adminlte-button label="Daftar Sidang Tugas Akhir" theme="primary" icon="fas fa-user-edit" onclick="window.location.href = '{{ route('add.daftar.sidang.skripsi') }}';"/>
          <br><br>
       @endif
    @endif

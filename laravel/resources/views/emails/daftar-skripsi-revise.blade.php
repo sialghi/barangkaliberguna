@@ -1,5 +1,5 @@
 @component('mail::message')
-# Pemberitahuan: Pendaftaran Sidang Skripsi Membutuhkan Revisi
+# Pemberitahuan: Pendaftaran Sidang Tugas Akhir Membutuhkan Revisi
 
 Yth.
 

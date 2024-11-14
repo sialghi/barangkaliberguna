@@ -31,7 +31,7 @@ class NilaiSkripsiNotification extends Mailable implements ShouldQueue
      */
     public function build()
     {
-        return $this->subject('Layanan Prodi Fakultas Sains dan Teknologi: Input Nilai Sidang Skripsi Selesai')
+        return $this->subject('Layanan Prodi Fakultas Sains dan Teknologi: Input Nilai Sidang Tugas Akhir Selesai')
                     ->markdown('emails.nilai-skripsi');
     }
 }

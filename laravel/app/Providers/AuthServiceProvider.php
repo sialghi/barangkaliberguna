@@ -28,17 +28,17 @@ class AuthServiceProvider extends ServiceProvider
 
         //
         Gate::define('show-exclusive-menu-admin', function (User $user) {
-            $allowedRoles = ['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'wadek_dekanat', 'kaprodi', 'sekprodi', 'admin_prodi'];
+            $allowedRoles = ['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat', 'kaprodi', 'sekprodi', 'admin_prodi'];
             return $user->roles()->whereIn('nama', $allowedRoles)->exists();
         });
 
         Gate::define('show-exclusive-menu-dosen', function (User $user) {
-            $allowedRoles = ['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'wadek_dekanat', 'kaprodi', 'sekprodi', 'admin_prodi', 'dosen'];
+            $allowedRoles = ['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat', 'kaprodi', 'sekprodi', 'admin_prodi', 'dosen'];
             return $user->roles()->whereIn('nama', $allowedRoles)->exists();
         });
 
         Gate::define('show-exclusive-menu-mahasiswa', function (User $user) {
-            $allowedRoles = ['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'wadek_dekanat', 'kaprodi', 'sekprodi', 'admin_prodi', 'mahasiswa'];
+            $allowedRoles = ['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat', 'kaprodi', 'sekprodi', 'admin_prodi', 'mahasiswa'];
             return $user->roles()->whereIn('nama', $allowedRoles)->exists();
         });
     }

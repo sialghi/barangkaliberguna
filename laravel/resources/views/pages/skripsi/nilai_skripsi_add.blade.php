@@ -126,7 +126,7 @@
         </x-slot>
         <option value="" selected disabled hidden>Pilih Pendaftar</option>
         @if (count($pendaftarSkripsi) == 0)
-            <option value="" disabled>Tidak ada data mahasiswa pendaftar sidang skripsi</option>
+            <option value="" disabled>Tidak ada data mahasiswa pendaftar sidang tugas akhir</option>
         @else
             @foreach ($pendaftarSkripsi as $data)
                 <option value="{{ $data->id }}" {{ old('pendaftarSkripsiSelect') == $data->id ? 'selected' : '' }}>

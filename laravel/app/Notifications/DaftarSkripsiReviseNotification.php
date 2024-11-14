@@ -31,7 +31,7 @@ class DaftarSkripsiReviseNotification extends Mailable implements ShouldQueue
     */
    public function build()
    {
-      return $this->subject('Layanan Prodi Fakultas Sains dan Teknologi: Pendaftaran Sidang Skripsi Membutuhkan Revisi')
+      return $this->subject('Layanan Prodi Fakultas Sains dan Teknologi: Pendaftaran Sidang Tugas Akhir Membutuhkan Revisi')
                   ->markdown('emails.daftar-skripsi-revise');
    }
 }

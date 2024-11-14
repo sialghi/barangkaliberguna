@@ -309,7 +309,7 @@ return [
                     'shift' => 'ml-3',
                 ],
                 [
-                    'text'  => 'Sidang Skripsi',
+                    'text'  => 'Sidang Tugas Akhir',
                     'url'   => 'pages/jadwal/sidang_skripsi',
                     'shift' => 'ml-3',
                 ],
@@ -360,7 +360,7 @@ return [
                     'shift' => 'ml-3',
                 ],
                 [
-                    'text'  => 'Sidang Skripsi',
+                    'text'  => 'Sidang Tugas Akhir',
                     'url'   => 'pages/sidang_skripsi/daftar',
                     'shift' => 'ml-3',
                 ],
@@ -392,7 +392,7 @@ return [
                     'shift' => 'ml-3',
                 ],
                 [
-                    'text'  => 'Sidang Skripsi',
+                    'text'  => 'Sidang Tugas Akhir',
                     'url'   => 'pages/sidang_skripsi/penilaian',
                     'shift' => 'ml-3',
                 ],

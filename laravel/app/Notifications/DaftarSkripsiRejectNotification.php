@@ -31,7 +31,7 @@ class DaftarSkripsiRejectNotification extends Mailable implements ShouldQueue
     */
    public function build()
    {
-      return $this->subject('Layanan Prodi Fakultas Sains dan Teknologi: Pendaftaran Sidang Skripsi Ditolak')
+      return $this->subject('Layanan Prodi Fakultas Sains dan Teknologi: Pendaftaran Sidang Tugas Akhir Ditolak')
                   ->markdown('emails.daftar-skripsi-reject');
    }
 }

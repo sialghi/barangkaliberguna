@@ -1,5 +1,5 @@
 @component('mail::message')
-# Pemberitahuan: Input Jadwal Sidang Skripsi Selesai
+# Pemberitahuan: Input Jadwal Sidang Tugas Akhir Selesai
 
 Yth.
 
@@ -15,8 +15,8 @@ Dosen Penguji 1: {{ $skripsiRequest->penguji_1 }} <br>
 Dosen Penguji 2: {{ $skripsiRequest->penguji_2 }} <br>
 ------------------------------------------------------------ <br>
 
-Kami ingin memberitahukan bahwa input jadwal sidang skripsi mahasiswa tersebut telah selesai.
-Anda dapat mengakses website kami untuk melihat detail dan mengisi nilai sidang skripsi tersebut.
+Kami ingin memberitahukan bahwa input jadwal sidang tugas akhir mahasiswa tersebut telah selesai.
+Anda dapat mengakses website kami untuk melihat detail dan mengisi nilai sidang tugas akhir tersebut.
 
 Terima kasih,<br>
 {{ config('app.name') }}

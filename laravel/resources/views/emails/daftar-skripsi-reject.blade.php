@@ -1,5 +1,5 @@
 @component('mail::message')
-# Pemberitahuan: Pendaftaran Sidang Skripsi Ditolak
+# Pemberitahuan: Pendaftaran Sidang Tugas Akhir Ditolak
 
 Yth.
 
