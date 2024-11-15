@@ -100,11 +100,11 @@
         </tr>
         <tr>
             <td colspan="2">
-                {{-- Waktu Ujian --}}
+                {{-- Waktu Seminar --}}
                 @php
                     $configTanggal = ['format' => 'YYYY-MM-DD HH:mm'];
                 @endphp
-                <label for="waktuSeminar">Tanggal dan Waktu Ujian <span class="text-red">*</span></label>
+                <label for="waktuSeminar">Tanggal dan Waktu Seminar <span class="text-red">*</span></label>
                 <x-adminlte-input-date id="waktuSeminar" name="waktuSeminar" :config="$configTanggal" placeholder="Pilih tanggal dan waktu ujian..." autocomplete="off" value="{{ old('waktuSeminar') }}">
                     <x-slot name="prependSlot">
                         <div class="input-group-text bg-gradient-green">

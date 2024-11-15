@@ -24,7 +24,7 @@
                   'judulSkripsi',
                   'pembimbing1',
                   'pembimbing2',
-                  'waktuUjian',
+                  'waktuSeminar',
                   'dosenPembimbingAkademik'];
    @endphp
    @if($errors->hasAny($listError))
@@ -99,12 +99,12 @@
          </tr>
          <tr>
                <td colspan="2">
-                  {{-- Waktu Ujian --}}
+                  {{-- Waktu Seminar --}}
                   @php
                      $configTanggal = ['format' => 'YYYY-MM-DD HH:mm'];
                   @endphp
-                  <label for="waktuUjian">Tanggal dan Waktu Ujian <span class="text-red">*</span></label>
-                  <x-adminlte-input-date id="waktuUjian" name="waktuUjian" :config="$configTanggal" placeholder="Pilih tanggal dan waktu ujian..." autocomplete="off" value="{{$pendaftaranSemhas->waktu_seminar}}">
+                  <label for="waktuSeminar">Tanggal dan Waktu Seminar <span class="text-red">*</span></label>
+                  <x-adminlte-input-date id="waktuSeminar" name="waktuSeminar" :config="$configTanggal" placeholder="Pilih tanggal dan waktu ujian..." autocomplete="off" value="{{$pendaftaranSemhas->waktu_seminar}}">
                      <x-slot name="prependSlot">
                            <div class="input-group-text bg-gradient-green">
                               <i class="fas fa-clock"></i>
