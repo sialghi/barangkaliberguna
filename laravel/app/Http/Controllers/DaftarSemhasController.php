@@ -234,7 +234,7 @@ class DaftarSemhasController extends Controller
                 $bimbinganDosenCountTotal += $bimbinganDosenCount;
             }
 
-            if ($bimbinganDosenCountTotal < 2) {
+            if ($bimbinganDosenCountTotal < 16) {
                 return redirect()->route('daftar.seminar.hasil')->with('error', 'Harus telah melakukan minimal 16 kali bimbingan dengan dosen pembimbing');
             }
         }

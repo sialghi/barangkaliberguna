@@ -63,12 +63,12 @@
    @endphp
 
    @if (array_intersect(['mahasiswa'], $userRole))
-      @if ($bimbinganCount < 2)
+      @if ($bimbinganCount < 16)
          <div>
             <span class="badge bg-danger text-sm mb-1 py-1"><i class="fas fa-exclamation-circle"></i> Anda belum memenuhi syarat untuk mendaftar seminar hasil</span>
-            <span class="badge bg-danger text-sm mb-1 py-1"><i class="fas fa-exclamation-circle"></i> Harus telah selesai melaksanakan seminar proposal dan mendapatkan penilaian dengan status "Selesai", serta telah melaksanakan 2x bimbingan skripsi dengan dosen pembimbing</span>
+            <span class="badge bg-danger text-sm mb-1 py-1"><i class="fas fa-exclamation-circle"></i> Harus telah selesai melaksanakan seminar proposal dan mendapatkan penilaian dengan status "Selesai", serta telah melaksanakan 16x bimbingan skripsi dengan dosen pembimbing</span>
             <br>
-            <span class="badge bg-warning text-sm mb-1 py-1"><i class="fas fa-exclamation-circle"></i> Total Bimbingan {{$bimbinganCount}}/2 </span>
+            <span class="badge bg-warning text-sm mb-1 py-1"><i class="fas fa-exclamation-circle"></i> Total Bimbingan {{$bimbinganCount}}/16 </span>
          </div>
          <x-adminlte-button label="Daftar Semhas" theme="primary" icon="fas fa-user-edit" disabled/>
          <br><br>
