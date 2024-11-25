@@ -167,7 +167,6 @@ class NilaiSkripsiController extends Controller
         $userPivot = UsersPivot::where('id_user', $user->id)->with('role', 'programStudi')->orderBy('id_role', 'desc')->get();
 
         $namaDosen = collect();
-        $nilaiSkripsi = collect();
 
         foreach ($userPivot as $pivot) {
             $role = $pivot->role->nama;
@@ -188,12 +187,15 @@ class NilaiSkripsiController extends Controller
                 $nilaiSkripsi = NilaiSkripsi::with('pendaftaranSemhas')->whereHas('mahasiswa.fakultas', function($query) use ($fakultasId) {
                     $query->where('program_studi.id', $fakultasId); // Adjust based on your column name
                 })->pluck('id_pendaftaran_skripsi')->toArray();
-                $pendaftarSkripsi = PendaftaranSkripsi::whereHas('mahasiswa.programStudi', function($query) use ($fakultasId) {
+                $pendaftarSkripsiAll = PendaftaranSkripsi::whereHas('mahasiswa.programStudi', function($query) use ($fakultasId) {
                     $query->where('program_studi.id', $fakultasId); // Adjust based on your column name
                 })->where('status', 'Diterima')
-                ->whereNotIn('id', $nilaiSkripsi)
                 ->with('mahasiswa', 'dosenPembimbingAkademik', 'pembimbing1', 'pembimbing2', 'calonPenguji1', 'calonPenguji2')
                 ->get();
+
+                $pendaftarSkripsi = $pendaftarSkripsiAll->reject(function ($item) use ($nilaiSkripsi) {
+                    return in_array($item->id, $nilaiSkripsi);
+                });
             }
             // If user has the role of Kaprodi, Sekprodi, and Admin_Prodi
             else if (in_array($role, ['kaprodi', 'sekprodi', 'admin_prodi'])) {
@@ -206,15 +208,22 @@ class NilaiSkripsiController extends Controller
 
                 $namaDosen = $namaDosen->merge($dosen);
 
-                $nilaiSkripsi = NilaiSkripsi::with('pendaftaranSemhas')->whereHas('mahasiswa.programStudi', function($query) use ($programStudiId) {
+                $nilaiSkripsi = NilaiSkripsi::with('pendaftaranSkripsi')->whereHas('mahasiswa.programStudi', function($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Adjust based on your column name
                 })->pluck('id_pendaftaran_skripsi')->toArray();
-                $pendaftarSkripsi = PendaftaranSkripsi::whereHas('mahasiswa.programStudi', function($query) use ($programStudiId) {
+                $pendaftarSkripsiAll = PendaftaranSkripsi::whereHas('mahasiswa.programStudi', function($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Adjust based on your column name
                 })->where('status', 'Diterima')
-                ->whereNotIn('id', $nilaiSkripsi)
                 ->with('mahasiswa', 'dosenPembimbingAkademik', 'pembimbing1', 'pembimbing2', 'calonPenguji1', 'calonPenguji2')
                 ->get();
+
+                $pendaftarSkripsi = $pendaftarSkripsiAll->reject(function ($item) use ($nilaiSkripsi) {
+                    return in_array($item->id, $nilaiSkripsi);
+                });
+                // return \response()->json([
+                //     'nilaiSkripsi' => $nilaiSkripsi,
+                //     'pendaftarSkripsi' => $pendaftarSkripsi,
+                // ]);
             }
             // If user has the role of Dosen
             // else if (in_array($role, ['dosen'])) {

@@ -167,7 +167,6 @@ class NilaiSemhasController extends Controller
         $userPivot = UsersPivot::where('id_user', $user->id)->with('role', 'programStudi')->orderBy('id_role', 'desc')->get();
 
         $namaDosen = collect();
-        $nilaiSemhas = collect();
 
         foreach ($userPivot as $pivot) {
             $role = $pivot->role->nama;
@@ -188,12 +187,15 @@ class NilaiSemhasController extends Controller
                 $nilaiSemhas = NilaiSemhas::with('pendaftaranSemhas')->whereHas('mahasiswa.fakultas', function($query) use ($fakultasId) {
                     $query->where('program_studi.id', $fakultasId); // Adjust based on your column name
                 })->pluck('id_pendaftaran_semhas')->toArray();
-                $pendaftarSemhas = PendaftaranSemhas::whereHas('mahasiswa.programStudi', function($query) use ($fakultasId) {
+                $pendaftarSemhasAll = PendaftaranSemhas::whereHas('mahasiswa.programStudi', function($query) use ($fakultasId) {
                     $query->where('program_studi.id', $fakultasId); // Adjust based on your column name
                 })->where('status', 'Diterima')
-                ->whereNotIn('id', $nilaiSemhas)
                 ->with('mahasiswa', 'dosenPembimbingAkademik', 'pembimbing1', 'pembimbing2', 'calonPenguji1', 'calonPenguji2')
                 ->get();
+
+                $pendaftarSemhas = $pendaftarSemhasAll->reject(function ($item) use ($nilaiSemhas) {
+                    return in_array($item->id, $nilaiSemhas);
+                });
             }
             // If user has the role of Kaprodi, Sekprodi, and Admin_Prodi
             else if (in_array($role, ['kaprodi', 'sekprodi', 'admin_prodi'])) {
@@ -209,12 +211,15 @@ class NilaiSemhasController extends Controller
                 $nilaiSemhas = NilaiSemhas::with('pendaftaranSemhas')->whereHas('mahasiswa.programStudi', function($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Adjust based on your column name
                 })->pluck('id_pendaftaran_semhas')->toArray();
-                $pendaftarSemhas = PendaftaranSemhas::whereHas('mahasiswa.programStudi', function($query) use ($programStudiId) {
+                $pendaftarSemhasAll = PendaftaranSemhas::whereHas('mahasiswa.programStudi', function($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Adjust based on your column name
                 })->where('status', 'Diterima')
-                ->whereNotIn('id', $nilaiSemhas)
                 ->with('mahasiswa', 'dosenPembimbingAkademik', 'pembimbing1', 'pembimbing2', 'calonPenguji1', 'calonPenguji2')
                 ->get();
+
+                $pendaftarSemhas = $pendaftarSemhasAll->reject(function ($item) use ($nilaiSemhas) {
+                    return in_array($item->id, $nilaiSemhas);
+                });
             }
             // If user has the role of Dosen
             // else if (in_array($role, ['dosen'])) {
