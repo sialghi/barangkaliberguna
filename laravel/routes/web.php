@@ -344,11 +344,11 @@ Route::middleware(['guest', 'throttle:6,1'])->group(function () {
 });
 
 // Logout route
-Route::get('logout', function () {
-    auth()->logout();
-    Session()->flush();
-    return redirect('/');
-})->name('logout');
+// Route::get('logout', function () {
+//     auth()->logout();
+//     Session()->flush();
+//     return redirect('/');
+// })->name('logout');
 
 // Fallback route
 Route::fallback(function () {
