@@ -6,6 +6,8 @@
     <link rel="stylesheet" href="/css/styles.css">
 @stop
 
+@section('plugins.BootstrapSelect', true)
+
 @section('content_header')
     <div class="d-flex flex-row">
         <h1>Input Nilai Seminar Hasil</h1>
@@ -120,7 +122,27 @@
 
 <form action="{{ route('store.nilai.seminar.hasil')}}" method="POST">
     @csrf
-    <x-adminlte-select id="pendaftarSemhasSelect" name="pendaftarSemhasSelect" label="Data Mahasiswa">
+    <label for="pendaftarSemhasSelect">Data Mahasiswa <span class="text-red">*</span> </label>
+    <x-adminlte-select-bs name="pendaftarSemhasSelect" label-class="text-black"
+        igroup-size="md" data-title="Pilih Mahasiswa..." data-live-search data-style='border: 1px solid #ced4da; background-color: #fff;'
+        data-live-search-placeholder="Cari..." data-show-tick value="{{ old('pendaftarSemhasSelect') }}">
+        <x-slot name="prependSlot">
+            <div class="input-group-text bg-gradient-info">
+                <i class="fas fa-id-card"></i>
+            </div>
+        </x-slot>
+        @if (count($pendaftarSemhas) == 0)
+            <option value="" disabled>Tidak ada data mahasiswa pendaftar seminar hasil</option>
+        @else
+            @foreach ($pendaftarSemhas as $data)
+                <option value="{{ $data->id }}" {{ old('pendaftarSemhasSelect') == $data->id ? 'selected' : '' }}>
+                    {{ $data->waktu_seminar }}, {{ $data->mahasiswa->nim_nip_nidn }} - {{ $data->mahasiswa->name }}
+                </option>
+            @endforeach
+        @endif
+    </x-adminlte-select-bs>
+
+    {{-- <x-adminlte-select id="pendaftarSemhasSelect" name="pendaftarSemhasSelect" label="Data Mahasiswa">
         <x-slot name="prependSlot">
             <div class="input-group-text bg-gradient-info">
                 <i class="fas fa-id-card"></i>
@@ -136,7 +158,7 @@
                 </option>
             @endforeach
         @endif
-    </x-adminlte-select>
+    </x-adminlte-select> --}}
     <input id="pendaftarSemhasId" type="hidden" name="pendaftarSemhasId" value="">
 
     <table style=" background-color: transparent;">
@@ -247,7 +269,21 @@
         <tr>
             <td>
                 {{-- NAMA PEMBIMBING 1 --}}
-                <label for="pembimbing1">Dosen Pembimbing 1 <span class="text-red">*</span></label>
+                <label for="pembimbing1">Dosen Pembimbing 1 <span class="text-red">*</span> </label>
+                <x-adminlte-select-bs name="pembimbing1" label-class="text-black"
+                    igroup-size="md" data-title="Pilih Dosen Pembimbing 1..." data-live-search data-style='border: 1px solid #ced4da; background-color: #fff;'
+                    data-live-search-placeholder="Cari..." data-show-tick value="{{ old('pembimbing1') }}">
+                    <x-slot name="prependSlot">
+                        <div class="input-group-text bg-gradient-dark">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    </x-slot>
+                    @foreach ($namaDosen as $dosen)
+                        <option value="{{ $dosen->id }}" {{ old('pembimbing1') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option>
+                    @endforeach
+                </x-adminlte-select-bs>
+
+                {{-- <label for="pembimbing1">Dosen Pembimbing 1 <span class="text-red">*</span></label>
                 <x-adminlte-select name="pembimbing1" id="pembimbing1">
                     <option value="" selected disabled hidden>Pilih Dosen Pembimbing 1</option>
                     @foreach ($namaDosen as $dosen)
@@ -258,7 +294,7 @@
                             <i class="fas fa-user"></i>
                         </div>
                     </x-slot>
-                </x-adminlte-select>
+                </x-adminlte-select> --}}
             </td>
             <td>
                 {{-- NILAI PEMBIMBING 1 --}}
@@ -274,7 +310,21 @@
         <tr>
             <td>
                 {{-- NAMA PEMBIMBING 2 --}}
-                <label for="pembimbing2">Dosen Pembimbing 2 <span class="text-red">*</span></label>
+                <label for="pembimbing2">Dosen Pembimbing 2 <span class="text-red">*</span> </label>
+                <x-adminlte-select-bs name="pembimbing2" label-class="text-black"
+                    igroup-size="md" data-title="Pilih Dosen Pembimbing 2..." data-live-search data-style='border: 1px solid #ced4da; background-color: #fff;'
+                    data-live-search-placeholder="Cari..." data-show-tick value="{{ old('pembimbing2') }}">
+                    <x-slot name="prependSlot">
+                        <div class="input-group-text bg-gradient-dark">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    </x-slot>
+                    @foreach ($namaDosen as $dosen)
+                        <option value="{{ $dosen->id }}" {{ old('pembimbing2') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option>
+                    @endforeach
+                </x-adminlte-select-bs>
+
+                {{-- <label for="pembimbing2">Dosen Pembimbing 2 <span class="text-red">*</span></label>
                 <x-adminlte-select name="pembimbing2" id="pembimbing2">
                     <option value="" selected disabled hidden>Pilih Dosen Pembimbing 1</option>
                     @foreach ($namaDosen as $dosen)
@@ -285,7 +335,7 @@
                             <i class="fas fa-user"></i>
                         </div>
                     </x-slot>
-                </x-adminlte-select>
+                </x-adminlte-select> --}}
             </td>
             <td>
                 {{-- NILAI PEMBIMBING 2 --}}
@@ -301,7 +351,21 @@
         <tr>
             <td>
                 {{-- NAMA PENGUJI 1 --}}
-                <label for="penguji1">Dosen Penguji 1 <span class="text-red">*</span></label>
+                <label for="penguji1">Dosen Penguji 1 <span class="text-red">*</span> </label>
+                <x-adminlte-select-bs name="penguji1" label-class="text-black"
+                    igroup-size="md" data-title="Pilih Dosen Penguji 1..." data-live-search data-style='border: 1px solid #ced4da; background-color: #fff;'
+                    data-live-search-placeholder="Cari..." data-show-tick value="{{ old('penguji1') }}">
+                    <x-slot name="prependSlot">
+                        <div class="input-group-text bg-gradient-dark">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    </x-slot>
+                    @foreach ($namaDosen as $dosen)
+                        <option value="{{ $dosen->id }}" {{ old('penguji1') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option>
+                    @endforeach
+                </x-adminlte-select-bs>
+
+                {{-- <label for="penguji1">Dosen Penguji 1 <span class="text-red">*</span></label>
                 <x-adminlte-select name="penguji1" id="penguji1">
                     <option value="" selected disabled hidden>Pilih Dosen Penguji 1</option>
                     @foreach ($namaDosen as $dosen)
@@ -312,7 +376,7 @@
                             <i class="fas fa-user"></i>
                         </div>
                     </x-slot>
-                </x-adminlte-select>
+                </x-adminlte-select> --}}
             </td>
             <td>
                 {{-- NILAI PENGUJI 1 --}}
@@ -328,7 +392,21 @@
         <tr>
             <td>
                 {{-- NAMA PENGUJI 2 --}}
-                <label for="penguji2">Dosen Penguji 2 <span class="text-red">*</span></label>
+                <label for="penguji2">Dosen Penguji 2 <span class="text-red">*</span> </label>
+                <x-adminlte-select-bs name="penguji2" label-class="text-black"
+                    igroup-size="md" data-title="Pilih Dosen Penguji 2..." data-live-search data-style='border: 1px solid #ced4da; background-color: #fff;'
+                    data-live-search-placeholder="Cari..." data-show-tick value="{{ old('penguji2') }}">
+                    <x-slot name="prependSlot">
+                        <div class="input-group-text bg-gradient-dark">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    </x-slot>
+                    @foreach ($namaDosen as $dosen)
+                        <option value="{{ $dosen->id }}" {{ old('penguji2') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option>
+                    @endforeach
+                </x-adminlte-select-bs>
+
+                {{-- <label for="penguji2">Dosen Penguji 2 <span class="text-red">*</span></label>
                 <x-adminlte-select name="penguji2" id="penguji2">
                     <option value="" selected disabled hidden>Pilih Dosen Penguji 2</option>
                     @foreach ($namaDosen as $dosen)
@@ -339,7 +417,7 @@
                             <i class="fas fa-user"></i>
                         </div>
                     </x-slot>
-                </x-adminlte-select>
+                </x-adminlte-select> --}}
             </td>
             <td>
                 {{-- NILAI PENGUJI 2 --}}
