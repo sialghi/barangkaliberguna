@@ -3,16 +3,16 @@
 
 Yth.
 
-Nama Mahasiswa: {{ $semhasRequest->nama_mahasiswa }} <br>
-Nomor Induk Mahasiswa: {{ $semhasRequest->nim }} <br>
+Nama Mahasiswa: {{ $semhasRequest->mahasiswa->name }} <br>
+Nomor Induk Mahasiswa: {{ $semhasRequest->mahasiswa->nim_nip_nidn }} <br>
 Judul Skripsi: {{ $semhasRequest->judul_skripsi }} <br>
 
 ------------------------------------------------------------ <br>
-Dosen Pembimbing 1: {{ $semhasRequest->pembimbing_1 }} <br>
-Dosen Pembimbing 2: {{ $semhasRequest->pembimbing_2 }} <br>
+Dosen Pembimbing 1: {{ $semhasRequest->pembimbing1->name }} <br>
+Dosen Pembimbing 2: {{ $semhasRequest->pembimbing2->name }} <br>
 ------------------------------------------------------------ <br>
-Dosen Penguji 1: {{ $semhasRequest->penguji_1 }} <br>
-Dosen Penguji 2: {{ $semhasRequest->penguji_2 }} <br>
+Dosen Penguji 1: {{ $semhasRequest->penguji1->name }} <br>
+Dosen Penguji 2: {{ $semhasRequest->penguji2->name }} <br>
 ------------------------------------------------------------ <br>
 
 Kami ingin memberitahukan bahwa input nilai seminar hasil mahasiswa tersebut telah selesai.

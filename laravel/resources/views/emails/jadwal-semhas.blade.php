@@ -8,11 +8,11 @@ Nomor Induk Mahasiswa: {{ $semhasRequest->nim }} <br>
 Judul Skripsi: {{ $semhasRequest->judul_skripsi }} <br>
 
 ------------------------------------------------------------ <br>
-Dosen Pembimbing 1: {{ $semhasRequest->pembimbing_1 }} <br>
-Dosen Pembimbing 2: {{ $semhasRequest->pembimbing_2 }} <br>
+Dosen Pembimbing 1: {{ $semhasRequest->pembimbing1->name }} <br>
+Dosen Pembimbing 2: {{ $semhasRequest->pembimbing2->name }} <br>
 ------------------------------------------------------------ <br>
-Dosen Penguji 1: {{ $semhasRequest->penguji_1 }} <br>
-Dosen Penguji 2: {{ $semhasRequest->penguji_2 }} <br>
+Dosen Penguji 1: {{ $semhasRequest->penguji1->name }} <br>
+Dosen Penguji 2: {{ $semhasRequest->penguji2->name }} <br>
 ------------------------------------------------------------ <br>
 
 Kami ingin memberitahukan bahwa input jadwal seminar hasil mahasiswa tersebut telah selesai.

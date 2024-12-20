@@ -3,16 +3,16 @@
 
 Yth.
 
-Nama Mahasiswa: {{ $skripsiRequest->nama_mahasiswa }} <br>
-Nomor Induk Mahasiswa: {{ $skripsiRequest->nim }} <br>
+Nama Mahasiswa: {{ $skripsiRequest->mahasiswa->name }} <br>
+Nomor Induk Mahasiswa: {{ $skripsiRequest->mahasiswa->nim_nip_nidn }} <br>
 Judul Skripsi: {{ $skripsiRequest->judul_skripsi }} <br>
 
 ------------------------------------------------------------ <br>
-Dosen Pembimbing 1: {{ $skripsiRequest->pembimbing_1 }} <br>
-Dosen Pembimbing 2: {{ $skripsiRequest->pembimbing_2 }} <br>
+Dosen Pembimbing 1: {{ $skripsiRequest->pembimbing1->name }} <br>
+Dosen Pembimbing 2: {{ $skripsiRequest->pembimbing2->name }} <br>
 ------------------------------------------------------------ <br>
-Dosen Penguji 1: {{ $skripsiRequest->penguji_1 }} <br>
-Dosen Penguji 2: {{ $skripsiRequest->penguji_2 }} <br>
+Dosen Penguji 1: {{ $skripsiRequest->penguji1->name }} <br>
+Dosen Penguji 2: {{ $skripsiRequest->penguji2->name }} <br>
 ------------------------------------------------------------ <br>
 
 Kami ingin memberitahukan bahwa input nilai sidang tugas akhir mahasiswa tersebut telah selesai.

@@ -112,7 +112,7 @@
             <td>{{ \Carbon\Carbon::parse($row->tanggal_seminar)->locale('id')->isoFormat('D MMMM Y') }}</td>
             <td>{{ $row->jam_seminar }}</td>
             <td>{{ $row->mahasiswa->name }}</td>
-            <td>{{ $row->mahasiswa->name }}</td>
+            <td>{{ $row->mahasiswa->nim_nip_nidn }}</td>
             <td>{{ $row->judul_skripsi }}</td>
             <td>
                1. {{ $row->pembimbing1->name }}
