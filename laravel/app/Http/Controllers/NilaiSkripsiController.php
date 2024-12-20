@@ -185,7 +185,7 @@ class NilaiSkripsiController extends Controller
                 $namaDosen = $namaDosen->merge($dosen);
 
                 $nilaiSkripsi = NilaiSkripsi::with('pendaftaranSemhas')->whereHas('mahasiswa.fakultas', function($query) use ($fakultasId) {
-                    $query->where('program_studi.id', $fakultasId); // Adjust based on your column name
+                    $query->where('fakultas.id', $fakultasId); // Adjust based on your column name
                 })->pluck('id_pendaftaran_skripsi')->toArray();
                 $pendaftarSkripsiAll = PendaftaranSkripsi::whereHas('mahasiswa.programStudi', function($query) use ($fakultasId) {
                     $query->where('program_studi.id', $fakultasId); // Adjust based on your column name

@@ -185,7 +185,7 @@ class NilaiSemhasController extends Controller
                 $namaDosen = $namaDosen->merge($dosen);
 
                 $nilaiSemhas = NilaiSemhas::with('pendaftaranSemhas')->whereHas('mahasiswa.fakultas', function($query) use ($fakultasId) {
-                    $query->where('program_studi.id', $fakultasId); // Adjust based on your column name
+                    $query->where('fakultas.id', $fakultasId); // Adjust based on your column name
                 })->pluck('id_pendaftaran_semhas')->toArray();
                 $pendaftarSemhasAll = PendaftaranSemhas::whereHas('mahasiswa.programStudi', function($query) use ($fakultasId) {
                     $query->where('program_studi.id', $fakultasId); // Adjust based on your column name
