@@ -187,8 +187,8 @@ class NilaiSemhasController extends Controller
                 $nilaiSemhas = NilaiSemhas::with('pendaftaranSemhas')->whereHas('mahasiswa.fakultas', function($query) use ($fakultasId) {
                     $query->where('fakultas.id', $fakultasId); // Adjust based on your column name
                 })->pluck('id_pendaftaran_semhas')->toArray();
-                $pendaftarSemhasAll = PendaftaranSemhas::whereHas('mahasiswa.programStudi', function($query) use ($fakultasId) {
-                    $query->where('program_studi.id', $fakultasId); // Adjust based on your column name
+                $pendaftarSemhasAll = PendaftaranSemhas::whereHas('mahasiswa.fakultas', function($query) use ($fakultasId) {
+                    $query->where('fakultas.id', $fakultasId); // Adjust based on your column name
                 })->where('status', 'Diterima')
                 ->with('mahasiswa', 'dosenPembimbingAkademik', 'pembimbing1', 'pembimbing2', 'calonPenguji1', 'calonPenguji2')
                 ->get();
