@@ -248,7 +248,8 @@ class NilaiSemhasController extends Controller
         return view('pages/semhas/nilai_seminar_hasil_add', compact('user', 'userRole', 'userPivot', 'namaDosen', 'pendaftarSemhas'));
     }
 
-    public function store(Request $request) {
+    public function store(Request $request)
+    {
         $rules = [
             'judulSkripsi' => ['required', 'string', 'max:191'],
             'tanggalSeminar' => ['required', 'date'],
@@ -403,6 +404,10 @@ class NilaiSemhasController extends Controller
                 ->with('user')
                 ->first();
             $kaprodiEmail = $toKaprodiPivot->user->email;
+
+            // $nilaiSemhas = NilaiSemhas::where('id', $nilaiSemhas->id)
+            //     ->with('mahasiswa', 'pembimbing1', 'pembimbing2', 'penguji1', 'penguji2')
+            //     ->first();
 
             $toSekprodiPivot = UsersPivot::where('id_program_studi', $programStudiId)
                 ->where('id_role', 7)

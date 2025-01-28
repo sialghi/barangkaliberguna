@@ -427,6 +427,10 @@ class NilaiSkripsiController extends Controller
                 $sekprodiEmail = $toSekprodiPivot->user->email;
             }
 
+            // $nilaiSkripsi = NilaiSkripsi::where('id', $nilaiSkripsi->id)
+            //     ->with('mahasiswa', 'pembimbing1', 'pembimbing2', 'penguji1', 'penguji2')
+            //     ->first();
+
             $ccEmails = [
                 $nilaiSkripsi->pembimbing1->email,
                 $nilaiSkripsi->pembimbing2->email,

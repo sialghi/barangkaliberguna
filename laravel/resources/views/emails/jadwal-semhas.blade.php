@@ -3,8 +3,8 @@
 
 Yth.
 
-Nama Mahasiswa: {{ $semhasRequest->nama_mahasiswa }} <br>
-Nomor Induk Mahasiswa: {{ $semhasRequest->nim }} <br>
+Nama Mahasiswa: {{ $semhasRequest->mahasiswa->name }} <br>
+Nomor Induk Mahasiswa: {{ $semhasRequest->mahasiswa->nim_nip_nidn }} <br>
 Judul Skripsi: {{ $semhasRequest->judul_skripsi }} <br>
 
 ------------------------------------------------------------ <br>
