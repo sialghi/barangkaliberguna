@@ -62,7 +62,7 @@ class NilaiSemhasController extends Controller
 
             // If user has the role of Dekan, Wadek_Satu, Wadek_Dua, Wadek_Tiga, or Admin_Dekanat
             if (in_array($role, ['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'])) {
-                $nilaiSemhas = NilaiSemhas::whereHas('mahasiswa.fakultas', function($query) use ($fakultasId) {
+                $nilaiSemhas = NilaiSemhas::whereHas('mahasiswa.fakultas', function ($query) use ($fakultasId) {
                     $query->where('fakultas.id', $fakultasId); // Adjust based on your column name
                 })->get()->reject(function ($item) {
                     return is_null($item->mahasiswa); // Remove items where mahasiswa is null
@@ -72,9 +72,9 @@ class NilaiSemhasController extends Controller
                 });
 
                 // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function($query) {
+                $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('fakultas', function($query) use ($fakultasId) {
+                })->whereHas('fakultas', function ($query) use ($fakultasId) {
                     $query->where('fakultas.id', $fakultasId); // Filter by the same program studi as the current user
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
 
@@ -82,7 +82,7 @@ class NilaiSemhasController extends Controller
             }
             // If user has the role of Kaprodi, Sekprodi, and Admin_Prodi
             else if (in_array($role, ['kaprodi', 'sekprodi', 'admin_prodi'])) {
-                $nilaiSemhas = NilaiSemhas::whereHas('mahasiswa.programStudi', function($query) use ($programStudiId) {
+                $nilaiSemhas = NilaiSemhas::whereHas('mahasiswa.programStudi', function ($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Adjust based on your column name
                 })->get()->reject(function ($item) {
                     return is_null($item->mahasiswa); // Remove items where mahasiswa is null
@@ -92,30 +92,30 @@ class NilaiSemhasController extends Controller
                 });
 
                 // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function($query) {
+                $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function($query) use ($programStudiId) {
+                })->whereHas('programStudi', function ($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
             }
             // If user has the role of Dosen
             else if (in_array($role, ['dosen'])) {
                 $nilaiSemhas = NilaiSemhas::where(function ($query) use ($userId) {
-                            $query->Where("id_pembimbing_1", $userId)
+                    $query->Where("id_pembimbing_1", $userId)
                         ->orWhere("id_pembimbing_2", $userId)
                         ->orWhere("id_penguji_1", $userId)
                         ->orWhere("id_penguji_2", $userId);
-                    })->get()->reject(function ($item) {
-                        return is_null($item->mahasiswa); // Remove items where mahasiswa is null
-                    });
+                })->get()->reject(function ($item) {
+                    return is_null($item->mahasiswa); // Remove items where mahasiswa is null
+                });
                 $nilaiSemhas->each(function ($item) {
                     $item->role = 'dosen';
                 });
 
                 // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function($query) {
+                $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function($query) use ($programStudiId) {
+                })->whereHas('programStudi', function ($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
             }
@@ -127,9 +127,9 @@ class NilaiSemhasController extends Controller
                 });
 
                 // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function($query) {
+                $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function($query) use ($programStudiId) {
+                })->whereHas('programStudi', function ($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
             }
@@ -144,19 +144,24 @@ class NilaiSemhasController extends Controller
         $data = $data->sortBy('created_at');
         $namaDosen = $namaDosen->sortBy('name')->unique('id');
 
-        return view('pages/semhas/nilai_seminar_hasil',  compact('data', 'user', 'userRole', 'namaDosen', 'userPivot'));
+        return view('pages/semhas/nilai_seminar_hasil', compact('data', 'user', 'userRole', 'namaDosen', 'userPivot'));
     }
 
     public function show($id)
     {
+        $user = Auth::user();
         $nilaiSemhas = NilaiSemhas::where('id', $id)
-                                    ->with('mahasiswa', 'pembimbing1', 'pembimbing2', 'penguji1', 'penguji2')
-                                    ->first();
-        // $userRole = Auth::user()->role;
+            ->with('mahasiswa', 'pembimbing1', 'pembimbing2', 'penguji1', 'penguji2')
+            ->first();
+
+
+        $userRole = $user->roles->pluck('nama')->toArray();
+
         // $namaDosen = User::whereIn('role', ['dosen', 'kaprodi', 'sekprodi'])->pluck('name', 'id');
 
         return response()->json([
             'penilaianSemhas' => $nilaiSemhas,
+            'userRole' => $userRole
         ]);
     }
 
@@ -176,22 +181,22 @@ class NilaiSemhasController extends Controller
             // If user has the role of Dekan, Wadek_Satu, Wadek_Dua, Wadek_Tiga, and Admin_Dekanat
             if (in_array($role, ['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'])) {
                 // Fetch dosen's name from the same program studi as the current user
-                $dosen = User::whereHas('roles', function($query) {
+                $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('fakultas', function($query) use ($fakultasId) {
+                })->whereHas('fakultas', function ($query) use ($fakultasId) {
                     $query->where('fakultas.id', $fakultasId); // Filter by the same program studi as the current user
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
 
                 $namaDosen = $namaDosen->merge($dosen);
 
-                $nilaiSemhas = NilaiSemhas::with('pendaftaranSemhas')->whereHas('mahasiswa.fakultas', function($query) use ($fakultasId) {
+                $nilaiSemhas = NilaiSemhas::with('pendaftaranSemhas')->whereHas('mahasiswa.fakultas', function ($query) use ($fakultasId) {
                     $query->where('fakultas.id', $fakultasId); // Adjust based on your column name
                 })->pluck('id_pendaftaran_semhas')->toArray();
-                $pendaftarSemhasAll = PendaftaranSemhas::whereHas('mahasiswa.fakultas', function($query) use ($fakultasId) {
+                $pendaftarSemhasAll = PendaftaranSemhas::whereHas('mahasiswa.fakultas', function ($query) use ($fakultasId) {
                     $query->where('fakultas.id', $fakultasId); // Adjust based on your column name
                 })->where('status', 'Diterima')
-                ->with('mahasiswa', 'dosenPembimbingAkademik', 'pembimbing1', 'pembimbing2', 'calonPenguji1', 'calonPenguji2')
-                ->get();
+                    ->with('mahasiswa', 'dosenPembimbingAkademik', 'pembimbing1', 'pembimbing2', 'calonPenguji1', 'calonPenguji2')
+                    ->get();
 
                 $pendaftarSemhas = $pendaftarSemhasAll->reject(function ($item) use ($nilaiSemhas) {
                     return in_array($item->id, $nilaiSemhas);
@@ -200,22 +205,22 @@ class NilaiSemhasController extends Controller
             // If user has the role of Kaprodi, Sekprodi, and Admin_Prodi
             else if (in_array($role, ['kaprodi', 'sekprodi', 'admin_prodi'])) {
                 // Fetch dosen's name from the same program studi as the current user
-                $dosen = User::whereHas('roles', function($query) {
+                $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function($query) use ($programStudiId) {
+                })->whereHas('programStudi', function ($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
 
                 $namaDosen = $namaDosen->merge($dosen);
 
-                $nilaiSemhas = NilaiSemhas::with('pendaftaranSemhas')->whereHas('mahasiswa.programStudi', function($query) use ($programStudiId) {
+                $nilaiSemhas = NilaiSemhas::with('pendaftaranSemhas')->whereHas('mahasiswa.programStudi', function ($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Adjust based on your column name
                 })->pluck('id_pendaftaran_semhas')->toArray();
-                $pendaftarSemhasAll = PendaftaranSemhas::whereHas('mahasiswa.programStudi', function($query) use ($programStudiId) {
+                $pendaftarSemhasAll = PendaftaranSemhas::whereHas('mahasiswa.programStudi', function ($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Adjust based on your column name
                 })->where('status', 'Diterima')
-                ->with('mahasiswa', 'dosenPembimbingAkademik', 'pembimbing1', 'pembimbing2', 'calonPenguji1', 'calonPenguji2')
-                ->get();
+                    ->with('mahasiswa', 'dosenPembimbingAkademik', 'pembimbing1', 'pembimbing2', 'calonPenguji1', 'calonPenguji2')
+                    ->get();
 
                 $pendaftarSemhas = $pendaftarSemhasAll->reject(function ($item) use ($nilaiSemhas) {
                     return in_array($item->id, $nilaiSemhas);
@@ -443,7 +448,50 @@ class NilaiSemhasController extends Controller
 
     public function simpanNilai(Request $request, $id)
     {
-        // Validasi input
+
+        // Cari nilai semhas berdasarkan ID
+        $nilaiSemhas = NilaiSemhas::findOrFail($id);
+        $user = Auth::user();
+
+
+        $userRoles = $user->roles->pluck('nama')->toArray(); // Collection berisi nama-nama
+
+        // 1. Definisikan peran yang memiliki hak akses penuh (admin-level)
+        $adminRoles = [
+            'dekan',
+            'wadek_satu',
+            'wadek_dua',
+            'wadek_tiga',
+            'admin_dekanat',
+            'kaprodi',
+            'sekprodi',
+            'admin_prodi'
+        ];
+
+        // 2. Cek apakah ada irisan antara peran pengguna dan peran admin
+        // Jika hasil irisan > 0, berarti pengguna adalah seorang admin.
+        $isAdmin = count(array_intersect($userRoles, $adminRoles)) > 0;
+
+        if (!$isAdmin) {
+            // Jika BUKAN admin, cek apakah dia mencoba mengisi nilai yang bukan haknya.
+            // Cek hanya untuk field yang dikirimkan oleh form.
+            if ($request->has('nilai_pembimbing_1') && $user->id != $nilaiSemhas->id_pembimbing_1) {
+                return redirect()->route('nilai.seminar.hasil')
+                    ->with('error', 'AKSES DITOLAK: Anda tidak berhak mengisi nilai pembimbing 1.');
+            }
+            if ($request->has('nilai_pembimbing_2') && $user->id != $nilaiSemhas->id_pembimbing_2) {
+                return redirect()->route('nilai.seminar.hasil')
+                    ->with('error', 'AKSES DITOLAK: Anda tidak berhak mengisi nilai pembimbing 2.');
+            }
+            if ($request->has('nilai_penguji_1') && $user->id != $nilaiSemhas->id_penguji_1) {
+                return redirect()->route('nilai.seminar.hasil')
+                    ->with('error', 'AKSES DITOLAK: Anda tidak berhak mengisi nilai Penguji 1.');
+            }
+            if ($request->has('nilai_penguji_2') && $user->id != $nilaiSemhas->id_penguji_2) {
+                return redirect()->route('nilai.seminar.hasil')
+                    ->with('error', 'AKSES DITOLAK: Anda tidak berhak mengisi nilai Penguji 2.');
+            }
+        }
         DB::beginTransaction();
         try {
             $rules = [
@@ -465,14 +513,14 @@ class NilaiSemhasController extends Controller
                 'nilai_penguji_2.between' => 'Nilai harus berada diantara 0 dan 100',
             ];
 
+            // Validasi input
             $validator = Validator::make($request->all(), $rules, $messages);
 
             if ($validator->fails()) {
                 return redirect()->route('nilai.seminar.hasil')->with('error', 'Nilai Seminar Hasil Gagal Disimpan')->withErrors($validator)->withInput();
             }
 
-            // Cari nilai semhas berdasarkan ID
-            $nilaiSemhas = NilaiSemhas::findOrFail($id);
+
 
             // Update nilai semhas
             $nilaiSemhas->nilai_pembimbing_1 = $request->has('nilai_pembimbing_1') ? $request->input('nilai_pembimbing_1') : $nilaiSemhas->nilai_pembimbing_1;
@@ -525,8 +573,7 @@ class NilaiSemhasController extends Controller
         $template->setValue('nip_nidn_pembimbing_1', $pembimbing_1->nim_nip_nidn);
 
         $path_ttd_pembimbing_1 = $pembimbing_1->ttd;
-        if($pembimbing_1->ttd && Storage::exists($path_ttd_pembimbing_1))
-        {
+        if ($pembimbing_1->ttd && Storage::exists($path_ttd_pembimbing_1)) {
             $ttd_pembimbing_1 = Storage::path($path_ttd_pembimbing_1);
             $template->setImageValue('ttd_pembimbing_1', array('path' => $ttd_pembimbing_1, 'width' => 120, 'height' => 120, 'ratio' => true));
         }
@@ -541,8 +588,7 @@ class NilaiSemhasController extends Controller
         $template->setValue('nip_nidn_pembimbing_2', $pembimbing_2->nim_nip_nidn);
 
         $path_ttd_pembimbing_2 = $pembimbing_2->ttd;
-        if($pembimbing_2->ttd && Storage::exists($path_ttd_pembimbing_2))
-        {
+        if ($pembimbing_2->ttd && Storage::exists($path_ttd_pembimbing_2)) {
             $ttd_pembimbing_2 = Storage::path($path_ttd_pembimbing_2);
             $template->setImageValue('ttd_pembimbing_2', array('path' => $ttd_pembimbing_2, 'width' => 120, 'height' => 120, 'ratio' => true));
         }
@@ -557,8 +603,7 @@ class NilaiSemhasController extends Controller
         $template->setValue('nip_nidn_penguji_1', $penguji_1->nim_nip_nidn);
 
         $path_ttd_penguji_1 = $penguji_1->ttd;
-        if($penguji_1->ttd && Storage::exists($path_ttd_penguji_1))
-        {
+        if ($penguji_1->ttd && Storage::exists($path_ttd_penguji_1)) {
             $ttd_penguji_1 = Storage::path($path_ttd_penguji_1);
             $template->setImageValue('ttd_penguji_1', array('path' => $ttd_penguji_1, 'width' => 120, 'height' => 120, 'ratio' => true));
         }
@@ -573,15 +618,14 @@ class NilaiSemhasController extends Controller
         $template->setValue('nip_nidn_penguji_2', $penguji_2->nim_nip_nidn);
 
         $path_ttd_penguji_2 = $penguji_2->ttd;
-        if($penguji_2->ttd && Storage::exists($path_ttd_penguji_2))
-        {
+        if ($penguji_2->ttd && Storage::exists($path_ttd_penguji_2)) {
             $ttd_penguji_2 = Storage::path($path_ttd_penguji_2);
             $template->setImageValue('ttd_penguji_2', array('path' => $ttd_penguji_2, 'width' => 120, 'height' => 120, 'ratio' => true));
         }
 
         // Atur Tanggal
         $date = new DateTime($semhas->tanggal_seminar, new DateTimeZone('Asia/Jakarta'));
-        $id_nama_bulan = array(1=>"Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember");
+        $id_nama_bulan = array(1 => "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember");
         $dateFormatted = $date->format('d n Y');
         $dateFormatted = explode(" ", $dateFormatted);
         $tanggal_seminar = $dateFormatted[0] . " " . $id_nama_bulan[$dateFormatted[1]] . " " . $dateFormatted[2];
@@ -610,15 +654,15 @@ class NilaiSemhasController extends Controller
         }
 
         // Rata-rata nilai Akhir
-        $rata_rata_nilai_akhir = ($semhas->nilai_penguji_1 + $semhas->nilai_penguji_2 + $semhas->nilai_pembimbing_1 + $semhas->nilai_pembimbing_2 )/4;
+        $rata_rata_nilai_akhir = ($semhas->nilai_penguji_1 + $semhas->nilai_penguji_2 + $semhas->nilai_pembimbing_1 + $semhas->nilai_pembimbing_2) / 4;
         $rata_rata_nilai_akhir = round($rata_rata_nilai_akhir);
-        if($rata_rata_nilai_akhir >= 80) {
+        if ($rata_rata_nilai_akhir >= 80) {
             $predikat_nilai_akhir = 'A';
-        } else if($rata_rata_nilai_akhir >= 68) {
+        } else if ($rata_rata_nilai_akhir >= 68) {
             $predikat_nilai_akhir = 'B';
-        } else if($rata_rata_nilai_akhir >= 56) {
+        } else if ($rata_rata_nilai_akhir >= 56) {
             $predikat_nilai_akhir = 'C';
-        } else if($rata_rata_nilai_akhir >= 45) {
+        } else if ($rata_rata_nilai_akhir >= 45) {
             $predikat_nilai_akhir = 'D';
         } else {
             $predikat_nilai_akhir = 'E';
@@ -628,7 +672,7 @@ class NilaiSemhasController extends Controller
         $template->setValue('nilai_huruf', $predikat_nilai_akhir);
 
         $directory = 'app/public/files/nilai_semhas/';
-        $outputFileNameDocx = 'NilaiSeminarHasil_' . preg_replace('/\s+/', '', $semhas->mahasiswa->name) . '_' . $semhas->mahasiswa->nim_nip_nidn .'.docx';
+        $outputFileNameDocx = 'NilaiSeminarHasil_' . preg_replace('/\s+/', '', $semhas->mahasiswa->name) . '_' . $semhas->mahasiswa->nim_nip_nidn . '.docx';
         $docxFilePath = storage_path($directory . $outputFileNameDocx);
         $template->saveAs($docxFilePath);
 
