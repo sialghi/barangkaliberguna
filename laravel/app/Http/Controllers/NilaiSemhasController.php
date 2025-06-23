@@ -655,14 +655,27 @@ class NilaiSemhasController extends Controller
 
         // Rata-rata nilai Akhir
         $rata_rata_nilai_akhir = ($semhas->nilai_penguji_1 + $semhas->nilai_penguji_2 + $semhas->nilai_pembimbing_1 + $semhas->nilai_pembimbing_2) / 4;
-        $rata_rata_nilai_akhir = round($rata_rata_nilai_akhir);
+
+        $tanggal_awal = '2024-08-31';
+        $tanggal_akhir = '2024-12-19';
+
+        $tanggal_seminarFinal = $semhas->tanggal_seminar;
+
+        if ($tanggal_seminarFinal >= $tanggal_awal && $tanggal_seminarFinal <= $tanggal_akhir) {
+            $rata_rata_nilai_akhir = round($rata_rata_nilai_akhir);
+        }
+
         if ($rata_rata_nilai_akhir >= 80) {
             $predikat_nilai_akhir = 'A';
-        } else if ($rata_rata_nilai_akhir >= 68) {
+        } else if ($rata_rata_nilai_akhir >= 75) {
+            $predikat_nilai_akhir = 'A-';
+        } else if ($rata_rata_nilai_akhir >= 70) {
             $predikat_nilai_akhir = 'B';
-        } else if ($rata_rata_nilai_akhir >= 56) {
+        } else if ($rata_rata_nilai_akhir >= 65) {
+            $predikat_nilai_akhir = 'B-';
+        } else if ($rata_rata_nilai_akhir >= 60) {
             $predikat_nilai_akhir = 'C';
-        } else if ($rata_rata_nilai_akhir >= 45) {
+        } else if ($rata_rata_nilai_akhir >= 50) {
             $predikat_nilai_akhir = 'D';
         } else {
             $predikat_nilai_akhir = 'E';

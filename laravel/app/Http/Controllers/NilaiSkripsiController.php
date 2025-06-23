@@ -479,7 +479,7 @@ class NilaiSkripsiController extends Controller
             if ($request->has('nilai_pembimbing_1') && $user->id != $nilaiSkripsi->id_pembimbing_1) {
                 return redirect()->route('nilai.sidang.skripsi')->with('error', 'AKSES DITOLAK: Anda tidak berhak mengisi nilai pembimbing 1.');
             }
-            if ($request->has('nilai_pembimbing_2') && $user->id != $nilaiSkripsi->id_pembimbing_1) {
+            if ($request->has('nilai_pembimbing_2') && $user->id != $nilaiSkripsi->id_pembimbing_2) {
                 return redirect()->route('nilai.sidang.skripsi')->with('error', 'AKSES DITOLAK: Anda tidak berhak mengisi nilai pembimbing 2.');
             }
             if ($request->has('nilai_penguji_1') && $user->id != $nilaiSkripsi->id_penguji_1) {
