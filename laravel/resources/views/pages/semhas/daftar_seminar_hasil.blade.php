@@ -46,7 +46,7 @@
          ['label' => 'Waktu Ujian', 'width' => 10],
          ['label' => 'Nama', 'width' => 15],
          ['label' => 'NIM', 'width' => 10],
-         ['label' => 'Judul Skripsi', 'width' => 30],
+         ['label' => 'Judul Tugas Akhir', 'width' => 30],
          ['label' => 'Status', 'width' => 10],
          ['label' => 'Aksi', 'no-export' => true, 'width' => 20],
       ];
@@ -66,7 +66,7 @@
       @if ($bimbinganCount < 16)
          <div>
             <span class="badge bg-danger text-sm mb-1 py-1"><i class="fas fa-exclamation-circle"></i> Anda belum memenuhi syarat untuk mendaftar seminar hasil</span>
-            <span class="badge bg-danger text-sm mb-1 py-1"><i class="fas fa-exclamation-circle"></i> Harus telah selesai melaksanakan seminar proposal dan mendapatkan penilaian dengan status "Selesai", serta telah melaksanakan 16x bimbingan skripsi dengan dosen pembimbing</span>
+            <span class="badge bg-danger text-sm mb-1 py-1"><i class="fas fa-exclamation-circle"></i> Harus telah selesai melaksanakan seminar proposal dan mendapatkan penilaian dengan status "Selesai", serta telah melaksanakan 16x bimbingan tugas akhir dengan dosen pembimbing</span>
             <br>
             <span class="badge bg-warning text-sm mb-1 py-1"><i class="fas fa-exclamation-circle"></i> Total Bimbingan {{$bimbinganCount}}/16 </span>
          </div>

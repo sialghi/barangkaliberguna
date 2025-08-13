@@ -68,8 +68,8 @@
                                 <td>NIM mahasiswa yang diinput.</td>
                             </tr>
                             <tr>
-                                <th>Judul Skripsi</th>
-                                <td>Judul skripsi mahasiswa yang diinput.</td>
+                                <th>Judul Tugas Akhir</th>
+                                <td>Judul Tugas Akhir mahasiswa yang diinput.</td>
                             </tr>
                             <tr>
                                 <th>Tanggal Seminar</th>
@@ -122,7 +122,7 @@
         ['label' => 'Prodi', 'width' => 10],
         ['label' => 'Nama', 'width' => 15],
         ['label' => 'NIM', 'width' => 10],
-        ['label' => 'Judul Skripsi', 'width' => 20],
+        ['label' => 'Judul Tugas Akhir', 'width' => 20],
         ['label' => 'Tanggal Seminar', 'width' => 10],
         ['label' => 'Rata-Rata', 'width' => 10],
         ['label' => 'Penilaian', 'no-export' => true, 'width' => 5],

@@ -20,6 +20,7 @@ class PendaftaranSempro extends Model
         'id_calon_dospem_2',
         'file_proposal_skripsi',
         'file_transkrip_nilai',
+        'id_kategori_ta',
         'status',
         'alasan',
     ];
@@ -42,5 +43,10 @@ class PendaftaranSempro extends Model
     public function periodeSempro()
     {
         return $this->belongsTo(PeriodeSempro::class, 'id_periode_sempro');
+    }
+
+    public function kategoriTa()
+    {
+        return $this->belongsTo(KategoriTA::class, 'id_kategori_ta');
     }
 }

@@ -134,7 +134,7 @@
                 </tr>
                 <tr>
                     <td colspan="2">
-                        <h2>Data Proposal Skripsi</h2>
+                        <h2>Data Proposal Tugas Akhir</h2>
                     </td>
                 </tr>
                 <tr>

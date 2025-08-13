@@ -73,8 +73,8 @@
         <tr>
             <td colspan="2" class="w-50">
                 {{-- Judul Proposal --}}
-                <label for="judulSkripsi">Judul Skripsi <span class="text-red">*</span></label>
-                <x-adminlte-textarea name="judulSkripsi" placeholder="Masukkan judul skripsi..." autocomplete="off">
+                <label for="judulSkripsi">Judul Tugas Akhir <span class="text-red">*</span></label>
+                <x-adminlte-textarea name="judulSkripsi" placeholder="Masukkan judul tugas akhir..." autocomplete="off">
                     {{ old('judulSkripsi') }}
                     <x-slot name="prependSlot">
                         <div class="input-group-text bg-gradient-info">
@@ -283,7 +283,7 @@
                 </x-adminlte-input-file>
             </td>
             <td >
-                <label for="fileNaskahSkripsi">Naskah Skripsi (PDF) <span class="text-red">*</span></label>
+                <label for="fileNaskahSkripsi">Naskah Tugas Akhir (PDF) <span class="text-red">*</span></label>
                 <x-adminlte-input-file name="fileNaskahSkripsi" placeholder="Klik untuk upload file..."
                     disable-feedback onchange="displayFileName(this)" accept=".pdf">
                     <x-slot name="prependSlot">
@@ -293,7 +293,7 @@
                 </x-adminlte-input-file>
             </td>
             <td >
-                <label for="filePengesahanSkripsi">Lembar Pengesahan Skripsi (PDF) <span class="text-red">*</span></label>
+                <label for="filePengesahanSkripsi">Lembar Pengesahan Tugas Akhir (PDF) <span class="text-red">*</span></label>
                 <x-adminlte-input-file name="filePengesahanSkripsi" placeholder="Klik untuk upload file..."
                     disable-feedback onchange="displayFileName(this)" accept=".pdf">
                     <x-slot name="prependSlot">

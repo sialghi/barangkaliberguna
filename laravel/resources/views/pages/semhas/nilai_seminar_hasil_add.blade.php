@@ -46,8 +46,8 @@
                                     <td>Nomor Induk Mahasiswa yang diinput.</td>
                                 </tr>
                                 <tr>
-                                    <th>Judul Skripsi</th>
-                                    <td>Judul skripsi yang diinput.</td>
+                                    <th>Judul Tugas Akhir</th>
+                                    <td>Judul Tugas Akhir yang diinput.</td>
                                 </tr>
                                 <tr>
                                     <th>Tanggal Seminar</th>
@@ -189,7 +189,7 @@
         <tr>
             <td>
                 {{-- Judul Skripsi --}}
-                <label for="judulSkripsi">Judul Skripsi <span class="text-red">*</span></label>
+                <label for="judulSkripsi">Judul Tugas Akhir <span class="text-red">*</span></label>
                 <x-adminlte-input name="judulSkripsi" id="judulSkripsi" placeholder="Masukkan judul skripsi..."  value="{{ old('judulSkripsi') }}" autocomplete="off">
                     <x-slot name="prependSlot">
                         <div class="input-group-text bg-gradient-info">

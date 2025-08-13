@@ -10,7 +10,7 @@
 
 @section('content_header')
    <div class="d-flex flex-row mb-4">
-      <h1>Edit Pendaftaran Seminar Hasil</h1>
+      <h1>Edit Pendaftaran Tugas Akhir</h1>
       <i id="panduan" class="fas fa-question-circle ml-2 my-2" data-toggle="modal" data-target="#infoModal"></i>
    </div>
 @stop
@@ -68,7 +68,7 @@
          <tr>
                <td colspan="2" class="w-50">
                   {{-- Judul Proposal --}}
-                  <label for="judulSkripsi">Judul Skripsi <span class="text-red">*</span></label>
+                  <label for="judulSkripsi">Judul Tugas Akhir <span class="text-red">*</span></label>
                   <x-adminlte-textarea name="judulSkripsi" placeholder="Masukkan judul skripsi..." autocomplete="off">
                      {{ old('judulSkripsi') }}{{ $daftarSkripsi->judul_skripsi }}
                      <x-slot name="prependSlot">
@@ -329,7 +329,7 @@
             </td>
             <td >
                   {{-- File Sertifikat TOEFL --}}
-                  <label class="mb-1" for="fileNaskahSkripsi">Naskah Skripsi (PDF) <span class="text-red">*</span>
+                  <label class="mb-1" for="fileNaskahSkripsi">Naskah Tugas Akhir (PDF) <span class="text-red">*</span>
                      <br>
                      <span class="text-xs">File sekarang:</span>
                   </label>

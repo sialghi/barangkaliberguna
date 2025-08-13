@@ -46,7 +46,7 @@
          ['label' => 'Waktu Ujian', 'width' => 10],
          ['label' => 'Nama', 'width' => 15],
          ['label' => 'NIM', 'width' => 10],
-         ['label' => 'Judul Skripsi', 'width' => 30],
+         ['label' => 'Judul Tugas Akhir', 'width' => 30],
          ['label' => 'Status', 'width' => 10],
          ['label' => 'Aksi', 'no-export' => true, 'width' => 20],
       ];

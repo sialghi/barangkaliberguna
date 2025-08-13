@@ -28,23 +28,23 @@
                         <table>
                             <tr>
                                 <th><img class="w-100" src="/img/panduan/btnInputNilai.png" /></th>
-                                <td>Tombol untuk pindah ke halaman "Input Nilai Skripsi".</td>
+                                <td>Tombol untuk pindah ke halaman "Input Nilai Tugas Akhir".</td>
                             </tr>
                             <tr>
                                 <th><img class="w-100" src="/img/panduan/btnPrint.png" /></th>
-                                <td>Tombol untuk mencetak daftar nilai skripsi.</td>
+                                <td>Tombol untuk mencetak daftar nilai tugas akhir.</td>
                             </tr>
                             <tr>
                                 <th><img class="w-100" src="/img/panduan/btnCsv.png" /></th>
-                                <td>Tombol untuk mengekspor daftar nilai skripsi kedalam format CSV.</td>
+                                <td>Tombol untuk mengekspor daftar nilai tugas akhir kedalam format CSV.</td>
                             </tr>
                             <tr>
                                 <th><img class="w-100" src="/img/panduan/btnExcel.png" /></th>
-                                <td>Tombol untuk mengekspor daftar nilai skripsi kedalam format Excel.</td>
+                                <td>Tombol untuk mengekspor daftar nilai tugas akhir kedalam format Excel.</td>
                             </tr>
                             <tr>
                                 <th><img class="w-100" src="/img/panduan/btnPdf.png" /></th>
-                                <td>Tombol untuk mengekspor daftar nilai skripsi kedalam format PDF.</td>
+                                <td>Tombol untuk mengekspor daftar nilai tugas akhir kedalam format PDF.</td>
                             </tr>
                         </table>
                     </div>
@@ -68,8 +68,8 @@
                                 <td>NIM mahasiswa yang diinput.</td>
                             </tr>
                             <tr>
-                                <th>Judul Skripsi</th>
-                                <td>Judul skripsi mahasiswa yang diinput.</td>
+                                <th>Judul Tugas Akhir</th>
+                                <td>Judul Tugas Akhir mahasiswa yang diinput.</td>
                             </tr>
                             <tr>
                                 <th>Tanggal Sidang</th>
@@ -122,7 +122,7 @@
         ['label' => 'Prodi', 'width' => 10],
         ['label' => 'Nama', 'width' => 12],
         ['label' => 'NIM', 'width' => 10],
-        ['label' => 'Judul Skripsi', 'width' => 25],
+        ['label' => 'Judul Tugas Akhir', 'width' => 25],
         ['label' => 'Tanggal Sidang', 'width' => 10],
         ['label' => 'Rata-Rata', 'width' => 10],
         ['label' => 'Penilaian', 'no-export' => true, 'width' => 5],

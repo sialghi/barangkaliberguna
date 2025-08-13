@@ -68,8 +68,8 @@
          <tr>
                <td colspan="2" class="w-50">
                   {{-- Judul Proposal --}}
-                  <label for="judulSkripsi">Judul Skripsi <span class="text-red">*</span></label>
-                  <x-adminlte-textarea name="judulSkripsi" placeholder="Masukkan judul skripsi..." autocomplete="off">
+                  <label for="judulSkripsi">Judul Tugas Akhir <span class="text-red">*</span></label>
+                  <x-adminlte-textarea name="judulSkripsi" placeholder="Masukkan judul tugas akhir..." autocomplete="off">
                      {{ old('judulSkripsi') }}{{ $pendaftaranSemhas->judul_skripsi }}
                      <x-slot name="prependSlot">
                            <div class="input-group-text bg-gradient-info">
@@ -327,7 +327,7 @@
                   </x-adminlte-input-file>
                </td>
                <td >
-                  <label class="mb-1" id="fileNaskahSkripsi" for="fileNaskahSkripsi">Naskah Skripsi (PDF) <span class="text-red">*</span>
+                  <label class="mb-1" id="fileNaskahSkripsi" for="fileNaskahSkripsi">Naskah Tugas Akhir (PDF) <span class="text-red">*</span>
                      <br>
                      <span class="text-xs">File sekarang:</span>
                   </label>
@@ -341,7 +341,7 @@
                   </x-adminlte-input-file>
                </td>
                <td >
-                  <label class="mb-1" id="filePengesahanSkripsi" for="filePengesahanSkripsi">Lembar Pengesahan Skripsi (PDF) <span class="text-red">*</span>
+                  <label class="mb-1" id="filePengesahanSkripsi" for="filePengesahanSkripsi">Lembar Pengesahan Tugas Akhir (PDF) <span class="text-red">*</span>
                      <br>
                      <span class="text-xs">File sekarang:</span>
                   </label>

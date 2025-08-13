@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\KategoriTA;
 use App\Models\PendaftaranSempro;
 use App\Models\User;
 use App\Models\PeriodeSempro;
@@ -45,7 +46,7 @@ class DaftarSemproController extends Controller
 
             // If user has the role of Dekan, Wadek_Satu, Wadek_Dua, Wadek_Tiga, or Admin_Dekanat
             if (in_array($role, ['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'])) {
-                $daftarSempro = PendaftaranSempro::whereHas('mahasiswa.fakultas', function($query) use ($fakultasId) {
+                $daftarSempro = PendaftaranSempro::whereHas('mahasiswa.fakultas', function ($query) use ($fakultasId) {
                     $query->where('fakultas.id', $fakultasId); // Adjust based on your column name
                 })->get()->reject(function ($item) {
                     return is_null($item->mahasiswa); // Remove items where mahasiswa is null
@@ -61,9 +62,9 @@ class DaftarSemproController extends Controller
                 $hasRevise = $reviseCount > 0 ? "Revisi Diajukan" : null;
 
                 // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function($query) {
+                $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('fakultas', function($query) use ($fakultasId) {
+                })->whereHas('fakultas', function ($query) use ($fakultasId) {
                     $query->where('fakultas.id', $fakultasId); // Filter by the same program studi as the current user
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
 
@@ -73,7 +74,7 @@ class DaftarSemproController extends Controller
             }
             // If user has the role of Kaprodi, Sekprodi, and Admin_Prodi
             else if (in_array($role, ['kaprodi', 'sekprodi', 'admin_prodi'])) {
-                $daftarSempro = PendaftaranSempro::whereHas('mahasiswa.programStudi', function($query) use ($programStudiId) {
+                $daftarSempro = PendaftaranSempro::whereHas('mahasiswa.programStudi', function ($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Adjust based on your column name
                 })->get()->reject(function ($item) {
                     return is_null($item->mahasiswa); // Remove items where mahasiswa is null
@@ -89,9 +90,9 @@ class DaftarSemproController extends Controller
                 $hasRevise = $reviseCount > 0 ? "Revisi Diajukan" : null;
 
                 // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function($query) {
+                $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function($query) use ($programStudiId) {
+                })->whereHas('programStudi', function ($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
 
@@ -101,10 +102,10 @@ class DaftarSemproController extends Controller
             // If user has the role of Dosen
             else if (in_array($role, ['dosen'])) {
                 $daftarSempro = PendaftaranSempro::where('id_calon_dospem_1', $user->id)
-                                    ->orWhere('id_calon_dospem_2', $user->id)
-                                    ->get()->reject(function ($item) {
-                                        return is_null($item->mahasiswa); // Remove items where mahasiswa is null
-                                    });
+                    ->orWhere('id_calon_dospem_2', $user->id)
+                    ->get()->reject(function ($item) {
+                        return is_null($item->mahasiswa); // Remove items where mahasiswa is null
+                    });
                 $daftarSempro->each(function ($item) {
                     $item->role = 'dosen';
                 });
@@ -116,9 +117,9 @@ class DaftarSemproController extends Controller
                 $hasRevise = $reviseCount > 0 ? "Revisi" : null;
 
                 // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function($query) {
+                $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function($query) use ($programStudiId) {
+                })->whereHas('programStudi', function ($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
 
@@ -139,9 +140,9 @@ class DaftarSemproController extends Controller
                 $hasRevise = $reviseCount > 0 ? "Revisi" : null;
 
                 // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function($query) {
+                $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function($query) use ($programStudiId) {
+                })->whereHas('programStudi', function ($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
 
@@ -160,18 +161,19 @@ class DaftarSemproController extends Controller
         $data = $data->sortBy('role')->unique('id');
         $data = $data->sortBy('created_at');
         $waktuSempro = $waktuSempro->sortByDesc('created_at')->unique('id');
+        $kategoriTa = KategoriTA::orderBy('id', 'asc')->get();
 
         // return response()->json($data);
         // Return to the view with merged data
-        return view('pages/sempro/daftar_seminar_proposal', compact('data', 'userRole', 'namaDosen', 'userPivot', 'waktuSempro', 'hasRevise', 'reviseCount'));
+        return view('pages/sempro/daftar_seminar_proposal', compact('data', 'userRole', 'namaDosen', 'userPivot', 'waktuSempro', 'hasRevise', 'reviseCount', 'kategoriTa'));
     }
 
 
     public function show($id)
     {
         $daftarSempro = PendaftaranSempro::where('id', $id)
-                                    ->with('mahasiswa', 'calonDospem1', 'calonDospem2', 'periodeSempro')
-                                    ->first();
+            ->with('mahasiswa', 'calonDospem1', 'calonDospem2', 'periodeSempro', 'kategoriTa')
+            ->first();
 
         return response()->json($daftarSempro);
     }
@@ -193,19 +195,19 @@ class DaftarSemproController extends Controller
             // If user has the role of Dekan, Wadek_Satu, Wadek_Dua, Wadek_Tiga, or Admin_Dekanat
             if (in_array($role, ['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'])) {
                 // Get the name of the dosen in the same fakultas as the current user
-                $dosen = User::whereHas('roles', function($query) {
+                $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('fakultas', function($query) use ($fakultasId) {
+                })->whereHas('fakultas', function ($query) use ($fakultasId) {
                     $query->where('fakultas.id', $fakultasId); // Filter by the same program studi as the current user
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
 
                 $waktuSempro = PeriodeSempro::where('id_fakultas', $fakultasId)
-                                        ->select('id', 'periode')
-                                        ->get();
+                    ->select('id', 'periode')
+                    ->get();
 
-                $user->listMahasiswa = User::whereHas('roles', function($query) {
+                $user->listMahasiswa = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'mahasiswa'); // Checking for 'mahasiswa' role
-                })->whereHas('fakultas', function($query) use ($fakultasId) {
+                })->whereHas('fakultas', function ($query) use ($fakultasId) {
                     $query->where('fakultas.id', $fakultasId); // Filter by the same program studi as the current user
                 })->select('id', 'nim_nip_nidn', 'name')
                     ->without(['pivot', 'roles'])
@@ -218,19 +220,19 @@ class DaftarSemproController extends Controller
             // If user has the role of Kaprodi, Sekprodi, and Admin_Prodi
             else if (in_array($role, ['kaprodi', 'sekprodi', 'admin_prodi'])) {
                 // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function($query) {
+                $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function($query) use ($programStudiId) {
+                })->whereHas('programStudi', function ($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
 
                 $waktuSempro = PeriodeSempro::where('id_program_studi', $programStudiId)
-                                        ->select('id', 'periode')
-                                        ->get();
+                    ->select('id', 'periode')
+                    ->get();
 
-                $user->listMahasiswa = User::whereHas('roles', function($query) {
+                $user->listMahasiswa = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'mahasiswa'); // Checking for 'mahasiswa' role
-                })->whereHas('programStudi', function($query) use ($programStudiId) {
+                })->whereHas('programStudi', function ($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
                 })->select('id', 'nim_nip_nidn', 'name')
                     ->without(['pivot', 'roles'])
@@ -243,16 +245,16 @@ class DaftarSemproController extends Controller
             // If user has the role of Mahasiswa
             else if (in_array($role, ['mahasiswa'])) {
                 // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function($query) {
+                $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function($query) use ($programStudiId) {
+                })->whereHas('programStudi', function ($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
 
                 $waktuSempro = PeriodeSempro::where('id_program_studi', $programStudiId)
-                                        // ->latest('periode')
-                                        ->select('id', 'periode')
-                                        ->get();
+                    // ->latest('periode')
+                    ->select('id', 'periode')
+                    ->get();
 
                 $namaDosen = $namaDosen->merge($dosen);
                 $waktuSemproLatest = $waktuSemproLatest->merge($waktuSempro);
@@ -261,6 +263,7 @@ class DaftarSemproController extends Controller
 
         $namaDosen = $namaDosen->sortBy('name')->unique('id');
         $waktuSemproLatest = $waktuSemproLatest->sortByDesc('created_at');
+        $kategoriTa = KategoriTA::orderBy('id', 'asc')->get();
 
         // return response()->json($user);
 
@@ -272,7 +275,7 @@ class DaftarSemproController extends Controller
         //     'waktuSemproLatest' => $waktuSemproLatest,
         // ]);
 
-        return view('pages/sempro/daftar_seminar_proposal_add', compact('user', 'userRole', 'userPivot', 'namaDosen', 'waktuSemproLatest'));
+        return view('pages/sempro/daftar_seminar_proposal_add', compact('user', 'userRole', 'userPivot', 'namaDosen', 'waktuSemproLatest', 'kategoriTa'));
     }
 
     public function store(Request $request)
@@ -283,25 +286,24 @@ class DaftarSemproController extends Controller
             'calonPembimbing1' => 'required|exists:users,id',
             'fileTranskripNilai' => 'required|file|mimes:pdf|max:15360',
             'fileProposalSkripsi' => 'required|file|mimes:pdf|max:15360',
+            'kategoriTugasAkhir' => 'required|exists:kategori_ta,id',
         ];
 
         $customMessages = [
             'judulProposal.required' => 'Judul Proposal wajib diisi',
             'judulProposal.string' => 'Judul Proposal harus berupa string',
             'judulProposal.max' => 'Judul Proposal maksimal 191 karakter',
-
+            'kategoriTugasAkhir.required' => 'Kategori Tugas Akhir wajib diisi',
+            'kategoriTugasAkhir.exists' => 'Kategori Tugas Akhir tidak valid',
             'periodeSempro.required' => 'Periode Sempro wajib diisi',
             'periodeSempro.exists' => 'Periode Sempro tidak valid',
-
             'calonPembimbing1.required' => 'Calon Pembimbing 1 wajib diisi',
             'calonPembimbing1.exists' => 'Calon Pembimbing 1 tidak valid',
-
             'fileTranskripNilai.required' => 'File Transkrip Nilai wajib diisi',
             'fileTranskripNilai.file' => 'File Transkrip Nilai yang dipilih tidak valid',
             'fileTranskripNilai.mimes' => 'File Transkrip Nilai harus dalam format PDF',
             'fileTranskripNilai.max' => 'Ukuran File Transkrip Nilai tidak boleh melebihi 15MB',
             'fileTranskripNilai.uploaded' => 'Ukuran File Transkrip Nilai tidak boleh melebihi 15MB',
-
             'fileProposalSkripsi.required' => 'File Proposal Skripsi wajib diisi',
             'fileProposalSkripsi.file' => 'File Proposal Skripsi yang dipilih tidak valid',
             'fileProposalSkripsi.mimes' => 'File Proposal Skripsi harus dalam format PDF',
@@ -336,14 +338,15 @@ class DaftarSemproController extends Controller
                     'id_periode_sempro' => $request->periodeSempro,
                     'id_calon_dospem_1' => $request->calonPembimbing1,
                     'id_calon_dospem_2' => $request->calonPembimbing2,
+                    'id_kategori_ta' => $request->kategoriTugasAkhir,
                     'file_proposal_skripsi' => $proposalName,
                     'file_transkrip_nilai' => $transkripName,
                 ]);
 
                 $daftarCount = PendaftaranSempro::where('id_mahasiswa', $userId)
-                                                ->where(function ($query) use ($periodeSempro) {
-                                                    $query->where('id_periode_sempro', $periodeSempro);
-                                                })->count();
+                    ->where(function ($query) use ($periodeSempro) {
+                        $query->where('id_periode_sempro', $periodeSempro);
+                    })->count();
                 if ($daftarCount > 1) {
                     DB::rollBack();
                     throw new \Exception('Sudah pernah mendaftar sebelumnya pada periode ini. Silahkan tunggu konfirmasi dari Kaprodi.');
@@ -355,14 +358,15 @@ class DaftarSemproController extends Controller
                     'id_periode_sempro' => $request->periodeSempro,
                     'id_calon_dospem_1' => $request->calonPembimbing1,
                     'id_calon_dospem_2' => $request->calonPembimbing2,
+                    'id_kategori_ta' => $request->kategoriTugasAkhir,
                     'file_proposal_skripsi' => $proposalName,
                     'file_transkrip_nilai' => $transkripName,
                 ]);
 
                 $daftarCount = PendaftaranSempro::where('id_mahasiswa', $request->dataMahasiswaSelect)
-                                                ->where(function ($query) use ($periodeSempro) {
-                                                    $query->where('id_periode_sempro', $periodeSempro);
-                                                })->count();
+                    ->where(function ($query) use ($periodeSempro) {
+                        $query->where('id_periode_sempro', $periodeSempro);
+                    })->count();
                 if ($daftarCount > 1) {
                     DB::rollBack();
                     throw new \Exception('Sudah pernah mendaftar sebelumnya pada periode ini. Silahkan tunggu konfirmasi dari Kaprodi.');
@@ -380,7 +384,6 @@ class DaftarSemproController extends Controller
             }
 
             return redirect()->route('daftar.seminar.proposal')->with('message', 'Berhasil mendaftar.');
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -400,6 +403,7 @@ class DaftarSemproController extends Controller
                 'proposalJudul' => 'string|max:191',
                 'calonDospem1' => 'exists:users,id',
                 'calonDospem2' => 'exists:users,id',
+                'kategoriTugasAkhir' => 'required|exists:kategori_ta,id',
                 'fileTranskripNilai' => ['file', 'mimes:pdf', 'max:15360', new FileNameValidator(160)],
                 'fileProposalSkripsi' => ['file', 'mimes:pdf', 'max:15360', new FileNameValidator(160)],
             ];
@@ -407,10 +411,10 @@ class DaftarSemproController extends Controller
             $customMessages = [
                 'proposalJudul.string' => 'Judul Proposal harus berupa string',
                 'proposalJudul.max' => 'Judul Proposal maksimal 191 karakter',
-
                 'calonDospem1.exists' => 'Calon Pembimbing 1 tidak valid',
-
                 'calonDospem2.exists' => 'Calon Pembimbing 1 tidak valid',
+                'kategoriTugasAkhir.required' => 'Kategori Tugas Akhir wajib diisi',
+                'kategoriTugasAkhir.exists' => 'Kategori Tugas Akhir tidak valid',
 
                 'fileTranskripNilai.file' => 'File Transkrip Nilai yang dipilih tidak valid',
                 'fileTranskripNilai.mimes' => 'File Transkrip Nilai harus dalam format PDF',
@@ -432,12 +436,13 @@ class DaftarSemproController extends Controller
                 'judul_proposal' => $request->proposalJudul ?? $daftarSempro->judul_proposal,
                 'id_calon_dospem_1' => $request->calonDospem1 ?? $daftarSempro->id_calon_dospem_1,
                 'id_calon_dospem_2' => $request->calonDospem2 ?? $daftarSempro->id_calon_dospem_2,
+                'id_kategori_ta' => $request->kategoriTugasAkhir ?? $daftarSempro->id_kategori_ta,
             ]);
 
             // Jika fileTranskripNilai tidak diisi maka gunakan file yang sudah ada
             if (is_null($request->fileTranskripNilai)) {
                 $daftarSempro->file_transkrip_nilai = $daftarSempro->file_transkrip_nilai;
-            // Jika fileTranskripNilai diisi
+                // Jika fileTranskripNilai diisi
             } else {
                 $fileTranskrip = $request->file('fileTranskripNilai');
                 if ($fileTranskrip) {
@@ -448,7 +453,7 @@ class DaftarSemproController extends Controller
 
                     // hapus file lama, dan simpan file baru
                     if (Storage::exists("public/files/daftar_sempro/{$daftarSempro->file_transkrip_nilai}")) {
-                        Storage::disk('local')->delete('public/files/daftar_sempro/'.$daftarSempro->file_transkrip_nilai);
+                        Storage::disk('local')->delete('public/files/daftar_sempro/' . $daftarSempro->file_transkrip_nilai);
                     }
                     Storage::putFileAs($transkripPath, $fileTranskrip, $transkripName);
 
@@ -459,7 +464,7 @@ class DaftarSemproController extends Controller
             // Jika fileProposalSkripsi tidak diisi maka gunakan file yang sudah ada
             if (is_null($request->fileProposalSkripsi)) {
                 $daftarSempro->file_proposal_skripsi = $daftarSempro->file_proposal_skripsi;
-            // Jika fileProposalSkripsi diisi
+                // Jika fileProposalSkripsi diisi
             } else {
                 $fileProposal = $request->file('fileProposalSkripsi');
 
@@ -471,7 +476,7 @@ class DaftarSemproController extends Controller
 
                     // hapus file lama, dan simpan file baru
                     if (Storage::exists("public/files/daftar_sempro/{$daftarSempro->file_proposal_skripsi}")) {
-                        Storage::disk('local')->delete('public/files/daftar_sempro/'.$daftarSempro->file_proposal_skripsi);
+                        Storage::disk('local')->delete('public/files/daftar_sempro/' . $daftarSempro->file_proposal_skripsi);
                     }
                     Storage::putFileAs($proposalPath, $fileProposal, $proposalName);
 
@@ -588,10 +593,10 @@ class DaftarSemproController extends Controller
             $fileProposal = $daftarSempro->file_proposal_skripsi;
 
             if (Storage::exists("public/files/daftar_sempro/{$fileTranskrip}")) {
-                Storage::disk('local')->delete('public/files/daftar_sempro/'.$fileTranskrip);
+                Storage::disk('local')->delete('public/files/daftar_sempro/' . $fileTranskrip);
             }
             if (Storage::exists("public/files/daftar_sempro/{$fileProposal}")) {
-                Storage::disk('local')->delete('public/files/daftar_sempro/'.$fileProposal);
+                Storage::disk('local')->delete('public/files/daftar_sempro/' . $fileProposal);
             }
 
             return redirect()->route('daftar.seminar.proposal')->with('message', 'Data berhasil dihapus.');
@@ -599,7 +604,7 @@ class DaftarSemproController extends Controller
             DB::rollback();
 
             if ($e->errorInfo[1] === 1451) {
-            // Handle the foreign key constraint violation error
+                // Handle the foreign key constraint violation error
                 return redirect()->route('daftar.seminar.proposal')->with('error', 'Data gagal dihapus karena data ini direferensikan oleh data lain.');
             }
 

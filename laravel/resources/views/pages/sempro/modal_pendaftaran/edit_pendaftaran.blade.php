@@ -28,18 +28,28 @@
                @csrf
                @method('PUT')
                <tr class="mt-3">
-                  <th>Proposal</th>
+                  <th colspan="2">Proposal</th>
                </tr>
                <tr>
-                  <td>
+               <td colspan="2">
+                        <x-adminlte-select name="kategoriTugasAkhir" label="Kategori Tugas Akhir">
+                        @foreach ($kategoriTa as $kat)
+                                <option value="{{ $kat->id }}" {{ old('kategoriTugasAkhir') == $kat->id ? 'selected' : '' }}>{{ $kat->kode }} - {{ $kat->nama }}</option>
+                            @endforeach
+                            <option value="" selected disabled hidden>Kategori Tugas Akhir</option>
+                        </x-adminlte-select>
+                  </td>
+        </tr>
+               <tr>
+                  <td colspan="2">
                         {{-- <input type="hidden" name="_method" value="PATCH"> --}}
-                        <x-adminlte-input id="proposalJudul" name="proposalJudul" label="Judul Proposal" placeholder="Judul Proposal">
+                        <x-adminlte-textarea id="proposalJudul" name="proposalJudul" label="Judul Proposal" placeholder="Judul Proposal">
                            <x-slot name="prependSlot">
                               <div class="input-group-text bg-gradient-info">
                                     <i class="fas fa-pen"></i>
                               </div>
                            </x-slot>
-                        </x-adminlte-input>
+                        </x-adminlte-textarea>
                   </td>
                </tr>
                <tr>
@@ -125,11 +135,13 @@
                   modal.find('#calonDospem2').html('<option value=""'+data.calon_dospem2.id+'"" selected disabled hidden>'+data.calon_dospem2.name+'</option>@foreach ($namaDosen as $dosen)<option value="{{ $dosen->id }}" {{ old('calonDospem2') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option>@endforeach')
                }
 
+               modal.find('#kategoriTugasAkhir').html('<option value=""'+data.kategori_ta.id+'"" selected disabled hidden>'+data.kategori_ta.kode+' - '+data.kategori_ta.nama+'</option>@foreach ($kategoriTa as $kat)<option value="{{ $kat->id }}" {{ old('kategoriTugasAkhir') == $kat->id ? 'selected' : '' }}>{{ $kat->kode }} - {{ $kat->nama }}</option>@endforeach')
+
                let fileNameTranskripNilai = data.file_transkrip_nilai.replace(/^\d+_/, '');
                 let fileNameProposalSkripsi = data.file_proposal_skripsi.replace(/^\d+_/, '');
 
                let fileTranskripNilaiHtml = 'Transkrip Nilai (PDF) <br><span class="text-xs">File sekarang:</span><br><a href="/api/seminar_proposal/daftar/berkas/'+ data.file_transkrip_nilai +'" target="_blank" class="btn btn-default px-1 d-flex align-items-center" title="'+ fileNameTranskripNilai +'"><span style="max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">'+fileNameTranskripNilai+'</span><i class="fas fa-lg fa-fw fa-file-pdf text-red"></i></a>';
-               let fileProposalHtml = 'Proposal Skripsi (PDF) <br><span class="text-xs">File sekarang:</span><br><a href="/api/seminar_proposal/daftar/berkas/'+ data.file_proposal +'" target="_blank" class="btn btn-default px-1 d-flex align-items-center" title="'+ fileNameProposalSkripsi +'"><span style="max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">'+fileNameProposalSkripsi+'</span><i class="fas fa-lg fa-fw fa-file-pdf text-red"></i></a>';
+               let fileProposalHtml = 'Proposal Tugas Akhir (PDF) <br><span class="text-xs">File sekarang:</span><br><a href="/api/seminar_proposal/daftar/berkas/'+ data.file_proposal +'" target="_blank" class="btn btn-default px-1 d-flex align-items-center" title="'+ fileNameProposalSkripsi +'"><span style="max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">'+fileNameProposalSkripsi+'</span><i class="fas fa-lg fa-fw fa-file-pdf text-red"></i></a>';
                modal.find('#fileTranskripNilai').html(fileTranskripNilaiHtml);
                modal.find('#fileProposalSkripsi').html(fileProposalHtml);
             });
