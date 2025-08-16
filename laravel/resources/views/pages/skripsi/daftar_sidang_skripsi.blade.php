@@ -133,7 +133,11 @@
                </td>
                <td>{{ $row->mahasiswa->nim_nip_nidn }}</td>
                <td class="text-truncate" style="max-width: 250px;" title="{{ $row->judul_skripsi }}">
-                {{ Str::limit($row->judul_skripsi, 50, '...') }}
+                  @php
+                     $katTa = isset($row->kategoriTa) ? '[' . $row->kategoriTa->kode . '] - ' : null;
+                  @endphp
+
+                  {{ $katTa }} {{ Str::limit($row->judul_skripsi, 50, '...') }}
             </td>
                <td class="text-md">
                   @if ($row->status == 'Sedang Diproses')

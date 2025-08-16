@@ -25,9 +25,14 @@ class PendaftaranSemhas extends Model
         'file_transkrip_nilai',
         'file_pernyataan_karya_sendiri',
         'file_pengesahan_skripsi',
-        'file_sertifikat_toafl_1', 'file_sertifikat_toafl_2', 'file_sertifikat_toafl_3',
-        'file_sertifikat_toefl_1', 'file_sertifikat_toefl_2', 'file_sertifikat_toefl_3',
+        'file_sertifikat_toafl_1',
+        'file_sertifikat_toafl_2',
+        'file_sertifikat_toafl_3',
+        'file_sertifikat_toefl_1',
+        'file_sertifikat_toefl_2',
+        'file_sertifikat_toefl_3',
         'file_naskah_skripsi',
+        'id_kategori_ta',
         'status',
         'alasan',
     ];
@@ -60,5 +65,10 @@ class PendaftaranSemhas extends Model
     public function calonPenguji2()
     {
         return $this->belongsTo(User::class, 'id_calon_penguji_2');
+    }
+
+    public function kategoriTa()
+    {
+        return $this->belongsTo(KategoriTA::class, 'id_kategori_ta');
     }
 }

@@ -161,7 +161,7 @@ $uniqueProgramStudi = $userPivot->pluck('programStudi.nama')->unique();
         <td>{{ $row->mahasiswa->nim_nip_nidn }}</td>
         <td class="text-truncate" style="max-width: 250px;" title="{{ $row->judul_proposal }}">
             @php
-            $katTa = $row->kategoriTa ? '[' . $row->kategoriTa->kode . '] - ' : null;
+                $katTa = isset($row->kategoriTa) ? '[' . $row->kategoriTa->kode . '] - ' : null;
             @endphp
 
             {{ $katTa }}{{ Str::limit($row->judul_proposal, 50, '...') }}

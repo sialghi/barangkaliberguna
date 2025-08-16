@@ -25,6 +25,7 @@ class PendaftaranSkripsi extends Model
         'file_transkrip_nilai',
         'file_persetujuan_penguji_semhas',
         'file_naskah_skripsi',
+        'id_kategori_ta',
         'status',
         'alasan',
     ];
@@ -57,5 +58,10 @@ class PendaftaranSkripsi extends Model
     public function calonPenguji2()
     {
         return $this->belongsTo(User::class, 'id_calon_penguji_2');
+    }
+
+    public function kategoriTa()
+    {
+        return $this->belongsTo(KategoriTA::class, 'id_kategori_ta');
     }
 }

@@ -9,7 +9,7 @@ use App\Models\User;
 use App\Models\UsersPivot;
 use App\Models\PendaftaranSemhas;
 use App\Models\BimbinganSkripsi;
-
+use App\Models\PendaftaranSempro;
 use App\Notifications\DaftarSemhasAcceptNotification;
 use App\Notifications\DaftarSemhasRejectNotification;
 use App\Notifications\DaftarSemhasReviseNotification;
@@ -221,6 +221,11 @@ class DaftarSemhasController extends Controller
         $userId = $user->id;
         $userRole = $user->roles->pluck('nama')->toArray();
 
+        $pendaftaranSempro = PendaftaranSempro::where('id_mahasiswa', $userId)->orderBy('created_at', 'desc')->first();
+        if (!$pendaftaranSempro) {
+            return redirect()->route('daftar.seminar.hasil')->with('error', 'Silahkan melakukan pendaftaran sempro terlebih dahulu');
+        }
+
         if (array_intersect($userRole, ['mahasiswa'])) {
             $bimbinganDosen = BimbinganSkripsi::where('id_mahasiswa', $userId)
                 ->pluck('id_pembimbing');
@@ -368,6 +373,7 @@ class DaftarSemhasController extends Controller
                 'file_sertifikat_toefl_1' => isset($sertifikatToeflPaths[0]) ? $sertifikatToeflPaths[0] : null,
                 'file_sertifikat_toefl_2' => isset($sertifikatToeflPaths[1]) ? $sertifikatToeflPaths[1] : null,
                 'file_sertifikat_toefl_3' => isset($sertifikatToeflPaths[2]) ? $sertifikatToeflPaths[2] : null,
+                'id_kategori_ta' => isset($pendaftaranSempro) ? $pendaftaranSempro->id_kategori_ta : null,
             ]);
 
             $pendaftaranDiproses = PendaftaranSemhas::where('id_mahasiswa', $userId)

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\NilaiSemhas;
+use App\Models\PendaftaranSemhas;
 use App\Models\PendaftaranSkripsi;
 use App\Models\User;
 use App\Models\UsersPivot;
@@ -230,6 +231,11 @@ class DaftarSkripsiController extends Controller
             return redirect()->route('daftar.sidang.skripsi')->with('error', 'Anda belum memiliki nilai seminar hasil.');
         }
 
+        $pendaftaranSemhas = PendaftaranSemhas::where('id_mahasiswa', $userId)->orderBy('created_at', 'desc')->first();
+        if (!$pendaftaranSemhas) {
+            return redirect()->route('daftar.sidang.skripsi')->with('error', 'Silahkan melakukan pendaftaran sempro terlebih dahulu');
+        }
+
         $rules = [
             'judulSkripsi' => 'required|string|max:191',
             'waktuUjian' => 'required|date',
@@ -306,6 +312,7 @@ class DaftarSkripsiController extends Controller
                 'file_transkrip_nilai' => $fileDaftarSkripsi['fileTranskripNilai'],
                 'file_persetujuan_penguji_semhas' => $fileDaftarSkripsi['filePersetujuanPengujiSemhas'],
                 'file_naskah_skripsi' => $fileDaftarSkripsi['fileNaskahSkripsi'],
+                'id_kategori_ta' => isset($pendaftaranSemhas) ? $pendaftaranSemhas->id_kategori_ta : null,
             ]);
 
             $pendaftaranDiproses = PendaftaranSkripsi::where('id_mahasiswa', $userId)
