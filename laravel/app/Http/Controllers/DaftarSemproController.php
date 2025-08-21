@@ -514,8 +514,8 @@ class DaftarSemproController extends Controller
 
             DB::commit();
 
-            Mail::to($daftarSempro->mahasiswa->email)
-                ->send(new DaftarSemproAcceptNotification($daftarSempro));
+            // Mail::to($daftarSempro->mahasiswa->email)
+            //     ->send(new DaftarSemproAcceptNotification($daftarSempro));
 
             return redirect()->route('daftar.seminar.proposal')->with('message', 'Status data berhasil disetujui.');
         } catch (\Exception $e) {
@@ -539,8 +539,8 @@ class DaftarSemproController extends Controller
 
             DB::commit();
 
-            Mail::to($daftarSempro->mahasiswa->email)
-                ->send(new DaftarSemproRejectNotification($daftarSempro));
+            // Mail::to($daftarSempro->mahasiswa->email)
+            //     ->send(new DaftarSemproRejectNotification($daftarSempro));
 
             return redirect()->route('daftar.seminar.proposal')->with('message', 'Status data ditolak.');
         } catch (QueryException $e) {
@@ -566,8 +566,8 @@ class DaftarSemproController extends Controller
 
             // return response()->json($daftarSempro);
 
-            Mail::to($daftarSempro->mahasiswa->email)
-                ->send(new DaftarSemproReviseNotification($daftarSempro));
+            // Mail::to($daftarSempro->mahasiswa->email)
+            //     ->send(new DaftarSemproReviseNotification($daftarSempro));
 
             return redirect()->route('daftar.seminar.proposal')->with('message', 'Status data revisi.');
         } catch (QueryException $e) {

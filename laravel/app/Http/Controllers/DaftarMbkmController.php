@@ -40,7 +40,7 @@ class DaftarMbkmController extends Controller
 
             // If user has the role of Dekan, Wadek_Satu, Wadek_Dua, Wadek_Tiga, and Admin_Dekanat
             if (in_array($role, ['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'])) {
-                $daftarMbkm = PendaftaranMbkm::whereHas('mahasiswa.fakultas', function($query) use ($fakultas) {
+                $daftarMbkm = PendaftaranMbkm::whereHas('mahasiswa.fakultas', function ($query) use ($fakultas) {
                     $query->where('fakultas.id', $fakultas);
                 })->get();
                 $daftarMbkm->each(function ($item) {
@@ -48,9 +48,9 @@ class DaftarMbkmController extends Controller
                 });
 
                 // Fetch dosen's name from the same program studi as the current user
-                $namaDosen = User::whereHas('roles', function($query) {
+                $namaDosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen');
-                })->whereHas('fakultas', function($query) use ($fakultas) {
+                })->whereHas('fakultas', function ($query) use ($fakultas) {
                     $query->where('fakultas.id', $fakultas);
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
 
@@ -58,7 +58,7 @@ class DaftarMbkmController extends Controller
             }
             // If user has the role of Kaprodi, Sekprodi, and Admin_Prodi
             else if (in_array($role, ['kaprodi', 'sekprodi', 'admin_prodi'])) {
-                $daftarMbkm = PendaftaranMbkm::whereHas('mahasiswa.programStudi', function($query) use ($programStudi) {
+                $daftarMbkm = PendaftaranMbkm::whereHas('mahasiswa.programStudi', function ($query) use ($programStudi) {
                     $query->where('program_studi.id', $programStudi);
                 })->get();
                 $daftarMbkm->each(function ($item) {
@@ -66,15 +66,15 @@ class DaftarMbkmController extends Controller
                 });
 
                 // Fetch dosen's name from the same program studi as the current user
-                $namaDosen = User::whereHas('roles', function($query) {
+                $namaDosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen');
-                })->whereHas('programStudi', function($query) use ($programStudi) {
+                })->whereHas('programStudi', function ($query) use ($programStudi) {
                     $query->where('program_studi.id', $programStudi);
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
             }
             // If user has the role of Dosen
             else if (in_array($role, ['dosen'])) {
-                $daftarMbkm = PendaftaranMbkm::whereHas('mahasiswa.programStudi', function($query) use ($programStudi) {
+                $daftarMbkm = PendaftaranMbkm::whereHas('mahasiswa.programStudi', function ($query) use ($programStudi) {
                     $query->where('program_studi.id', $programStudi);
                 })->where('id_dosen_pembimbing', $user->id)->get();
                 $daftarMbkm->each(function ($item) {
@@ -82,9 +82,9 @@ class DaftarMbkmController extends Controller
                 });
 
                 // Fetch dosen's name from the same program studi as the current user
-                $namaDosen = User::whereHas('roles', function($query) {
+                $namaDosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen');
-                })->whereHas('programStudi', function($query) use ($programStudi) {
+                })->whereHas('programStudi', function ($query) use ($programStudi) {
                     $query->where('program_studi.id', $programStudi);
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
             }
@@ -96,9 +96,9 @@ class DaftarMbkmController extends Controller
                 });
 
                 // Fetch dosen's name from the same program studi as the current user
-                $namaDosen = User::whereHas('roles', function($query) {
+                $namaDosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen');
-                })->whereHas('programStudi', function($query) use ($programStudi) {
+                })->whereHas('programStudi', function ($query) use ($programStudi) {
                     $query->where('program_studi.id', $programStudi);
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
             }
@@ -117,8 +117,8 @@ class DaftarMbkmController extends Controller
     public function show($id)
     {
         $pendaftaranMbkm = PendaftaranMbkm::where('id', $id)
-                                            ->with('mahasiswa', 'pembimbing')
-                                            ->first();
+            ->with('mahasiswa', 'pembimbing')
+            ->first();
 
         return response()->json([
             "pendaftaranMbkm" => $pendaftaranMbkm,
@@ -141,9 +141,9 @@ class DaftarMbkmController extends Controller
             // If user has the role of Dekan, Wadek_Satu, Wadek_Dua, Wadek_Tiga, and Admin_Dekanat
             if (in_array($role, ['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'])) {
                 // Fetch dosen's name from the same program studi as the current user
-                $dosen = User::whereHas('roles', function($query) {
+                $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('fakultas', function($query) use ($fakultasId) {
+                })->whereHas('fakultas', function ($query) use ($fakultasId) {
                     $query->where('fakultas.id', $fakultasId); // Filter by the same program studi as the current user
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
 
@@ -153,9 +153,9 @@ class DaftarMbkmController extends Controller
             }
             // If user has the role of Kaprodi, Sekprodi, and Admin_Prodi
             else if (in_array($role, ['kaprodi', 'sekprodi', 'admin_prodi'])) {
-                $dosen = User::whereHas('roles', function($query) {
+                $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function($query) use ($programStudiId) {
+                })->whereHas('programStudi', function ($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
 
@@ -163,9 +163,9 @@ class DaftarMbkmController extends Controller
             }
             // If user has the role of Dosen
             else if (in_array($role, ['dosen'])) {
-                $dosen = User::whereHas('roles', function($query) {
+                $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function($query) use ($programStudiId) {
+                })->whereHas('programStudi', function ($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
 
@@ -173,9 +173,9 @@ class DaftarMbkmController extends Controller
             }
             // If user has the role of Mahasiswa
             else if (in_array($role, ['mahasiswa'])) {
-                $dosen = User::whereHas('roles', function($query) {
+                $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function($query) use ($programStudiId) {
+                })->whereHas('programStudi', function ($query) use ($programStudiId) {
                     $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
 
@@ -263,7 +263,6 @@ class DaftarMbkmController extends Controller
             }
 
             return redirect()->route('daftar.mbkm')->with('message', 'Berhasil mendaftar.');
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -308,8 +307,8 @@ class DaftarMbkmController extends Controller
                 Storage::putFileAs($rekomendasiPath, $fileRekomendasi, $rekomendasiName);
             }
 
-            Mail::to($pendaftaranMbkm->mahasiswa->email)
-                ->send(new DaftarMbkmAcceptNotification($pendaftaranMbkm));
+            // Mail::to($pendaftaranMbkm->mahasiswa->email)
+            //     ->send(new DaftarMbkmAcceptNotification($pendaftaranMbkm));
 
             return redirect()->route('daftar.mbkm')->with('message', 'Status data diterima.');
         } catch (\Exception $e) {
@@ -333,8 +332,8 @@ class DaftarMbkmController extends Controller
 
             DB::commit();
 
-            Mail::to($pendaftaranMbkm->mahasiswa->email)
-                ->send(new DaftarMbkmRejectNotification($pendaftaranMbkm));
+            // Mail::to($pendaftaranMbkm->mahasiswa->email)
+            //     ->send(new DaftarMbkmRejectNotification($pendaftaranMbkm));
 
             return redirect()->route('daftar.mbkm')->with('message', 'Status data ditolak.');
         } catch (\Exception $e) {
@@ -360,11 +359,11 @@ class DaftarMbkmController extends Controller
             DB::commit();
 
             if (Storage::exists("public/files/daftar_mbkm/{$fileKomitmen}")) {
-                Storage::disk('local')->delete('public/files/daftar_mbkm/'.$fileKomitmen);
+                Storage::disk('local')->delete('public/files/daftar_mbkm/' . $fileKomitmen);
             }
 
             if (Storage::exists("public/files/daftar_mbkm/{$fileRekomendasi}")) {
-                Storage::disk('local')->delete('public/files/daftar_mbkm/'.$fileRekomendasi);
+                Storage::disk('local')->delete('public/files/daftar_mbkm/' . $fileRekomendasi);
             }
 
             return redirect()->route('daftar.mbkm')->with('message', 'Data berhasil dihapus.');
