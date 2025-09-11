@@ -56,13 +56,13 @@ class LoginController extends Controller
             'email' => [
                 'required',
                 'string',
-                'email:rfc,dns',
-                // // regex to use email uin jkt in logins
-                // function ($attribute, $value, $fail) {
-                //     if (!preg_match('/^[\w.+-]+@(?:mhs\.)?uinjkt\.ac\.id$/', $value)) {
-                //         $fail('Email harus berakhiran @uinjkt.ac.id');
-                //     }
-                // },
+                // 'email:rfc,dns', --> problem dns
+                // regex to use email uin jkt in logins
+                function ($attribute, $value, $fail) {
+                    if (!preg_match('/^[\w.+-]+@(?:mhs\.)?uinjkt\.ac\.id$/', $value)) {
+                        $fail('Email harus berakhiran @uinjkt.ac.id');
+                    }
+                },
             ],
             'password' => 'required|string',
         ];
