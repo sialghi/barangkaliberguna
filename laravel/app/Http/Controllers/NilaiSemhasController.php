@@ -433,9 +433,9 @@ class NilaiSemhasController extends Controller
             if ($sekprodiEmail != null || $sekprodiEmail != '') {
                 array_push($ccEmails, $sekprodiEmail);
             }
-            // Mail::to($kaprodiEmail)
-            //     ->cc($ccEmails)
-            //     ->send(new JadwalSemhasNotification($nilaiSemhas));
+            Mail::to($kaprodiEmail)
+                ->cc($ccEmails)
+                ->send(new JadwalSemhasNotification($nilaiSemhas));
 
             return redirect()->route('nilai.seminar.hasil')->with('message', 'Berhasil Diinput.');
         } catch (\Exception $e) {
@@ -727,9 +727,9 @@ class NilaiSemhasController extends Controller
         if ($sekprodiEmail != null || $sekprodiEmail != '') {
             array_push($ccEmails, $sekprodiEmail);
         }
-        // Mail::to($kaprodiEmail)
-        //     ->cc($ccEmails)
-        //     ->send(new JadwalSemhasNotification($nilaiSemhas));
+        Mail::to($kaprodiEmail)
+            ->cc($ccEmails)
+            ->send(new JadwalSemhasNotification($nilaiSemhas));
 
         // Redirect to a success page or perform any additional logic
         return Redirect::back()->with('message', 'Email berhasil dikirim.');

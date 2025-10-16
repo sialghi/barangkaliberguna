@@ -618,8 +618,8 @@ class DaftarSemhasController extends Controller
 
             DB::commit();
 
-            // Mail::to($pendaftaranSemhas->mahasiswa->email)
-            //     ->send(new DaftarSemhasAcceptNotification($pendaftaranSemhas));
+            Mail::to($pendaftaranSemhas->mahasiswa->email)
+                ->send(new DaftarSemhasAcceptNotification($pendaftaranSemhas));
 
             return redirect()->route('daftar.seminar.hasil')->with('message', 'Status data berhasil disetujui.');
         } catch (\Exception $e) {
@@ -643,8 +643,8 @@ class DaftarSemhasController extends Controller
 
             DB::commit();
 
-            // Mail::to($pendaftaranSemhas->mahasiswa->email)
-            //     ->send(new DaftarSemhasRejectNotification($pendaftaranSemhas));
+            Mail::to($pendaftaranSemhas->mahasiswa->email)
+                ->send(new DaftarSemhasRejectNotification($pendaftaranSemhas));
 
             return redirect()->route('daftar.seminar.hasil')->with('message', 'Status data ditolak');
         } catch (\Exception $e) {
@@ -668,8 +668,8 @@ class DaftarSemhasController extends Controller
 
             DB::commit();
 
-            // Mail::to($pendaftaranSemhas->mahasiswa->email)
-            //     ->send(new DaftarSemhasReviseNotification($pendaftaranSemhas));
+            Mail::to($pendaftaranSemhas->mahasiswa->email)
+                ->send(new DaftarSemhasReviseNotification($pendaftaranSemhas));
 
             return redirect()->back()->with('message', 'Status data revisi.');
         } catch (QueryException $e) {
