@@ -307,8 +307,8 @@ class DaftarMbkmController extends Controller
                 Storage::putFileAs($rekomendasiPath, $fileRekomendasi, $rekomendasiName);
             }
 
-            // Mail::to($pendaftaranMbkm->mahasiswa->email)
-            //     ->send(new DaftarMbkmAcceptNotification($pendaftaranMbkm));
+            Mail::to($pendaftaranMbkm->mahasiswa->email)
+                ->send(new DaftarMbkmAcceptNotification($pendaftaranMbkm));
 
             return redirect()->route('daftar.mbkm')->with('message', 'Status data diterima.');
         } catch (\Exception $e) {
@@ -332,8 +332,8 @@ class DaftarMbkmController extends Controller
 
             DB::commit();
 
-            // Mail::to($pendaftaranMbkm->mahasiswa->email)
-            //     ->send(new DaftarMbkmRejectNotification($pendaftaranMbkm));
+            Mail::to($pendaftaranMbkm->mahasiswa->email)
+                ->send(new DaftarMbkmRejectNotification($pendaftaranMbkm));
 
             return redirect()->route('daftar.mbkm')->with('message', 'Status data ditolak.');
         } catch (\Exception $e) {

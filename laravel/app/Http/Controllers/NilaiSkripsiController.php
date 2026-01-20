@@ -442,9 +442,9 @@ class NilaiSkripsiController extends Controller
             if ($sekprodiEmail != null || $sekprodiEmail != '') {
                 array_push($ccEmails, $sekprodiEmail);
             }
-            // Mail::to($kaprodiEmail)
-            //     ->cc($ccEmails)
-            //     ->send(new JadwalSkripsiNotification($nilaiSkripsi));
+            Mail::to($kaprodiEmail)
+                ->cc($ccEmails)
+                ->send(new JadwalSkripsiNotification($nilaiSkripsi));
 
             return redirect()->route('nilai.sidang.skripsi')->with('message', 'Berhasil Diinput.');
         } catch (\Exception $e) {
@@ -700,9 +700,9 @@ class NilaiSkripsiController extends Controller
         if ($sekprodiEmail != null || $sekprodiEmail != '') {
             array_push($ccEmails, $sekprodiEmail);
         }
-        // Mail::to($kaprodiEmail)
-        //     ->cc($ccEmails)
-        //     ->send(new JadwalSkripsiNotification($nilaiSkripsi));
+        Mail::to($kaprodiEmail)
+            ->cc($ccEmails)
+            ->send(new JadwalSkripsiNotification($nilaiSkripsi));
 
         // Redirect to a success page or perform any additional logic
         return Redirect::back()->with('message', 'Email berhasil dikirim.');
