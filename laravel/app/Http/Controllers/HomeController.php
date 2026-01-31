@@ -43,7 +43,7 @@ class HomeController extends Controller
             $programStudi = $pivot->id_program_studi;
             $fakultas = $pivot->id_fakultas;
             if (array_intersect(['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat',], $userRole)) {
-                $suratTTD = Letter::whereHas('mahasiswa.fakultas', function($query) use ($fakultas) {
+                $suratTTD = Letter::whereHas('mahasiswa.fakultas', function ($query) use ($fakultas) {
                     $query->where('fakultas.id', $fakultas); // Adjust based on your column name
                 })->get();
                 $totalSuratTTD = $suratTTD->count();
@@ -51,7 +51,7 @@ class HomeController extends Controller
                 $sudahTTD = $suratTTD->where("status", 'Sudah di TTD')->count();
                 $ditolakTTD = $suratTTD->where("status", 'Ditolak')->count();
 
-                $suratPT = PermohonanTugas::whereHas('dosen.fakultas', function($query) use ($fakultas) {
+                $suratPT = PermohonanTugas::whereHas('dosen.fakultas', function ($query) use ($fakultas) {
                     $query->where('fakultas.id', $fakultas); // Adjust based on your column name
                 })->get();
                 $totalSuratPT = $suratPT->count();
@@ -61,7 +61,7 @@ class HomeController extends Controller
 
                 return view('home', compact('userRole', 'userPivot', 'totalSuratTTD', 'belumTTD', 'sudahTTD', 'ditolakTTD', 'totalSuratPT', 'PTdiproses', 'PTditerima', 'PTditolak'));
             } else if (array_intersect(['kaprodi', 'sekprodi', 'admin_prodi'], $userRole)) {
-                $suratTTD = Letter::whereHas('mahasiswa.programStudi', function($query) use ($programStudi) {
+                $suratTTD = Letter::whereHas('mahasiswa.programStudi', function ($query) use ($programStudi) {
                     $query->where('program_studi.id', $programStudi); // Adjust based on your column name
                 })->get();
                 $totalSuratTTD = $suratTTD->count();
@@ -69,7 +69,7 @@ class HomeController extends Controller
                 $sudahTTD = $suratTTD->where("status", 'Sudah di TTD')->count();
                 $ditolakTTD = $suratTTD->where("status", 'Ditolak')->count();
 
-                $SuratPT = PermohonanTugas::whereHas('dosen.programStudi', function($query) use ($programStudi) {
+                $SuratPT = PermohonanTugas::whereHas('dosen.programStudi', function ($query) use ($programStudi) {
                     $query->where('program_studi.id', $programStudi); // Adjust based on your column name
                 })->get();
                 $totalSuratPT = $SuratPT->count();
@@ -78,8 +78,7 @@ class HomeController extends Controller
                 $PTditolak = $SuratPT->where("status", 'Ditolak')->count();
 
                 return view('home', compact('userRole', 'userPivot', 'totalSuratTTD', 'belumTTD', 'sudahTTD', 'ditolakTTD', 'totalSuratPT', 'PTdiproses', 'PTditerima', 'PTditolak'));
-            }
-            else if (in_array('dosen', $userRole)) {
+            } else if (in_array('dosen', $userRole)) {
                 $suratPT = PermohonanTugas::where("id_user", $user->id)->get();
                 $totalSuratPT = $suratPT->count();
                 $PTdiproses = $suratPT->where("status", "Sedang Diproses")->count();
@@ -87,8 +86,7 @@ class HomeController extends Controller
                 $PTditolak = $suratPT->where("status", "Ditolak")->count();
 
                 return view('home', compact('userRole', 'userPivot', 'totalSuratPT', 'PTdiproses', 'PTditerima', 'PTditolak'));
-            }
-            else if (in_array('mahasiswa', $userRole)) {
+            } else if (in_array('mahasiswa', $userRole)) {
                 $suratTTD = Letter::where("id_mahasiswa", $user->id)->get();
                 $totalSuratTTD = $suratTTD->count();
                 $belumTTD = $suratTTD->where("status", 'Belum di TTD')->count();
