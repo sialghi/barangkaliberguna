@@ -10,14 +10,15 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     $(document).ready(function () {
-        //Dosen Chart
-        @if(array_intersect(['dosen'], $userRole))
+        // --- 1. DOSEN CHART (Dinamis dari Database) ---
+        @if(in_array('dosen', $userRole))
             if ($('#bimbinganChart').length) {
                 var donutChartCanvas = $('#bimbinganChart').get(0).getContext('2d');
                 var donutData = {
                     labels: ['Selesai (Finished)', 'Sedang Berjalan (On-Going)'],
                     datasets: [{
-                        data: [34, 66],
+                        // Mengambil data dari variabel bimbinganSelesai dan bimbinganOngoing
+                        data: [{{ $bimbinganSelesai ?? 0 }}, {{ $bimbinganOngoing ?? 0 }}],
                         backgroundColor: ['#28a745', '#fd7e14'],
                     }]
                 }
@@ -35,158 +36,171 @@
             }
         @endif
 
-        //Prodi Chart
+        $('#prodiFilterDekanat').on('change', function () {
+            var selectedProdi = $(this).val();
+            var $tbody = $('#dekanat-dosen-accordion');
+
+            if (selectedProdi === 'all') {
+                $tbody.find('tr').show();
+            } else {
+                $tbody.find('tr').hide(); // Sembunyikan semua baris
+                
+                // Cari baris dosen yang cocok
+                $tbody.find('tr[data-prodi="' + selectedProdi + '"]').each(function() {
+                    $(this).show(); // Tampilkan baris dosen
+                    // Tampilkan juga baris detail (collapse container) tepat di bawahnya
+                    $(this).next('tr').addClass('d-none'); // Default detail tertutup tapi 'ada'
+                    $(this).next('tr').css('display', ''); // Reset display dari .hide() sebelumnya
+                });
+            }
+
+            // Update Total Text
+            var count = $tbody.find('tr[data-prodi]:visible').length;
+            $('#totalDosenText').text('Total: ' + count + ' Dosen');
+        });
+
+        // --- 2. Dekanat Bar Chart (Fix Skala 1 Mahasiswa) ---
+        @if(array_intersect(['dekan', 'wadek_satu', 'admin_dekanat'], $userRole))
+            if ($('#dekanatChart').length) {
+                var ctx = $('#dekanatChart').get(0).getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: @json($chartLabels),
+                        datasets: [{
+                            label: 'Jumlah Mahasiswa Bimbingan',
+                            data: @json($chartData),
+                            backgroundColor: 'rgba(60, 141, 188, 0.9)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1, // Agar angka 1, 2, 3 terlihat jelas
+                                    precision: 0
+                                }
+                                // Hapus 'max' agar skala menyesuaikan otomatis (Auto-scale)
+                            }
+                        }
+                    }
+                });
+            }
+        @endif
+
         @if(array_intersect(['kaprodi', 'sekprodi', 'admin_prodi'], $userRole))
             if ($('#bimbinganChartProdi').length) {
                 var prodiChartCanvas = $('#bimbinganChartProdi').get(0).getContext('2d');
-                var prodiData = {
-                    labels: ['Selesai (Finished)', 'Sedang Berjalan (On-Going)'],
-                    datasets: [{
-                        data: [12, 43], // Based on mock data: 12 Finished, 43 Ongoing
-                        backgroundColor: ['#28a745', '#fd7e14'],
-                    }]
-                }
-                var prodiOptions = {
-                    maintainAspectRatio: false,
-                    responsive: true,
-                    legend: { display: false },
-                    cutout: '0%',
-                }
                 new Chart(prodiChartCanvas, {
                     type: 'pie',
-                    data: prodiData,
-                    options: prodiOptions
-                })
+                    data: {
+                        labels: ['Selesai', 'On-Going'],
+                        datasets: [{
+                            data: [{{ $prodiSelesai ?? 0 }}, {{ $prodiOngoing ?? 0 }}],
+                            backgroundColor: ['#28a745', '#fd7e14'],
+                        }]
+                    },
+                    options: { maintainAspectRatio: false, responsive: true, legend: { display: false } }
+                });
             }
         @endif
 
-        // Dekanat Bar Chart
+        // --- 3. DEKANAT CHART ---
         @if(array_intersect(['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'], $userRole))
             if ($('#dekanatChart').length) {
-                var dekanatChartCanvas = $('#dekanatChart').get(0).getContext('2d');
-                var dekanatData = {
-                    labels: ['Teknik Pertambangan', 'Teknik Informatika', 'Agribisnis', 'Biologi', 'Sistem Informasi', 'Matematika', 'Fisika', 'Kimia'],
-                    datasets: [{
-                        label: 'Jumlah Mahasiswa',
-                        data: [120, 150, 100, 80, 130, 90, 60, 70],
-                        backgroundColor: 'rgba(60, 141, 188, 0.9)',
-                        borderColor: 'rgba(60, 141, 188, 0.8)',
-                        borderWidth: 1
-                    }]
-                }
-                var dekanatOptions = {
-                    maintainAspectRatio: false,
-                    responsive: true,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        x: {
-                            grid: { display: false },
-                            ticks: { maxRotation: 45, minRotation: 45 }
+                    var dekanatChartCanvas = $('#dekanatChart').get(0).getContext('2d');
+                    new Chart(dekanatChartCanvas, {
+                        type: 'bar',
+                        data: {
+                            labels: @json($chartLabels), // Nama-nama Prodi
+                            datasets: [{
+                                label: 'Total Mahasiswa Bimbingan',
+                                data: @json($chartData), // Jumlah mahasiswa per prodi
+                                backgroundColor: 'rgba(60, 141, 188, 0.9)',
+                            }]
                         },
-                        y: {
-                            grid: { color: '#f4f4f4', borderDash: [2, 2] },
-                            beginAtZero: true,
-                            max: 200,
-                            ticks: { stepSize: 40 }
-                        }
-                    }
-                }
-
-                new Chart(dekanatChartCanvas, {
-                    type: 'bar',
-                    data: dekanatData,
-                    options: dekanatOptions
-                })
-            }
-        @endif
-    });
-
-    $(document).ready(function () {
-        @if(array_intersect(['dosen'], $userRole))
-            $('.btn-filter').on('click', function () {
-                var filter = $(this).data('filter');
-
-                $('.btn-filter').removeClass('btn-primary').addClass('btn-secondary');
-                $(this).removeClass('btn-secondary').addClass('btn-primary');
-
-                if (filter == 'all') {
-                    $('table.projects tbody tr').show();
-                    $('.mobile-card').show();
-                } else {
-                    $('table.projects tbody tr').hide();
-                    $('table.projects tbody tr[data-status="' + filter + '"]').show();
-
-                    $('.mobile-card').hide();
-                    $('.mobile-card[data-status="' + filter + '"]').show();
-                }
-            });
-        @endif
-    });
-
-    $(document).ready(function () {
-        $('.btn-filter-inner').on('click', function (e) {
-            e.stopPropagation();
-            var filter = $(this).data('filter');
-            var target = $(this).data('target');
-
-            $(this).siblings().removeClass('btn-primary').addClass('btn-secondary');
-            $(this).removeClass('btn-secondary').addClass('btn-primary');
-
-            if (filter == 'all') {
-                $(target).find('[data-status]').show();
-            } else {
-                $(target).find('[data-status]').hide();
-                $(target).find('[data-status="' + filter + '"]').show();
-            }
-        });
-
-        $('.collapse').on('click', function (e) {
-            e.stopPropagation();
-        });
-
-        //Dekanat Prodi Filter
-        @if(array_intersect(['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'], $userRole))
-            $('#prodiFilterDekanat').on('change', function () {
-                var value = $(this).val();
-
-                var rows = $('#dekanat-dosen-accordion > tr.accordion-toggle');
-                var mobileCards = $('#mobile-dekanat-dosen-accordion .mobile-card');
-
-                if (value === 'all') {
-                    // Show everything
-                    rows.show();
-                    $('#dekanat-dosen-accordion > tr').show();
-                    mobileCards.show();
-                } else {
-                    // Filter Desktop
-                    rows.each(function () {
-                        var rowProdi = $(this).attr('data-prodi');
-                        var detailRow = $(this).next('tr');
-
-                        if (rowProdi === value) {
-                            $(this).show();
-                            detailRow.show();
-                        } else {
-                            $(this).hide();
-                            detailRow.hide();
-                        }
-                    });
-
-                    // Filter Mobile
-                    mobileCards.each(function () {
-                        var cardProdi = $(this).attr('data-prodi');
-                        if (cardProdi === value) {
-                            $(this).show();
-                        } else {
-                            $(this).hide();
+                        options: {
+                            maintainAspectRatio: false,
+                            responsive: true,
+                            scales: {
+                                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                            }
                         }
                     });
                 }
-            });
-        @endif
+            @endif
     });
+
+    $(document).ready(function () {
+    $('#prodiFilterDekanat').on('change', function () {
+        var selectedProdi = $(this).val();
+
+        // --- Logika Filter Desktop ---
+        var desktopRows = $('#dekanat-dosen-accordion tr[data-prodi]');
+        
+        if (selectedProdi === 'all') {
+            // Tampilkan semua baris jika pilih "Semua Jurusan"
+            $('#dekanat-dosen-accordion tr').show();
+        } else {
+            // Sembunyikan semua baris di dalam tbody
+            $('#dekanat-dosen-accordion tr').hide();
+            
+            // Tampilkan baris utama yang prodi-nya cocok
+            desktopRows.each(function() {
+                if ($(this).attr('data-prodi') === selectedProdi) {
+                    $(this).show();
+                    // Tampilkan juga baris detail bimbingan (baris berikutnya)
+                    $(this).next('tr').show(); 
+                }
+            });
+        }
+
+        // --- Logika Filter Mobile ---
+        var mobileCards = $('#mobile-dekanat-dosen-accordion [data-prodi]');
+        
+        if (selectedProdi === 'all') {
+            mobileCards.show();
+        } else {
+            mobileCards.hide();
+            mobileCards.filter('[data-prodi="' + selectedProdi + '"]').show();
+        }
+
+        var selectedProdi = $(this).val();
+        var desktopRows = $('#dekanat-dosen-accordion tr[data-prodi]');
+        
+        // 1. Logika Penyaringan (Filter)
+        if (selectedProdi === 'all') {
+            $('#dekanat-dosen-accordion tr').show();
+            $('#mobile-dekanat-dosen-accordion [data-prodi]').show();
+        } else {
+            // Sembunyikan semua dulu
+            $('#dekanat-dosen-accordion tr').hide();
+            $('#mobile-dekanat-dosen-accordion [data-prodi]').hide();
+            
+            // Tampilkan yang cocok (Desktop)
+            desktopRows.each(function() {
+                if ($(this).attr('data-prodi') === selectedProdi) {
+                    $(this).show();
+                    $(this).next('tr').show(); // Detail bimbingan
+                }
+            });
+
+            // Tampilkan yang cocok (Mobile)
+            $('#mobile-dekanat-dosen-accordion [data-prodi="' + selectedProdi + '"]').show();
+        }
+
+        // 2. UPDATE TOTAL DOSEN (Dinamis)
+        // Kita hitung jumlah baris data-prodi yang statusnya tidak hidden
+        var currentCount = $('#dekanat-dosen-accordion tr[data-prodi]:visible').length;
+        
+        // Update teks di UI
+        $('#totalDosenText').text('Total: ' + currentCount + ' Dosen');
+    });
+});
 </script>
 @stop
 
@@ -197,39 +211,19 @@
         <h1>Sistem Informasi Layanan</h1>
         <h1>Fakultas Sains dan Teknologi</h1>
     </div>
-    <i id="panduan" class="fas fa-question-circle ml-2 my-2" data-toggle="modal" data-target="#infoModal"></i>
+    <i id="panduan" class="fas fa-question-circle ml-2 my-2" data-toggle="modal" data-target="#infoModal" style="cursor: pointer;"></i>
 </div>
 <hr>
-<div class="modal fade" id="infoModal" tabindex="-1" role="dialog" aria-labelledby="infoModalLabel" aria-hidden="true">
+
+<div class="modal fade" id="infoModal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Panduan Halaman</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Tutup">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body">
-                <div id="panduanSection">
-                    <img id="imgPanduan" src="/img/panduan/totalSurat.png" />
-                    <p>"Total Surat" adalah seluruh surat yang dimiliki oleh pengguna baik yang sudah di tanda tangan
-                        (TTD), belum di TTD, dan surat yang ditolak.</p>
-                </div>
-                <div id="panduanSection" class="my-4">
-                    <img id="imgPanduan" src="/img/panduan/belumTTD.png" />
-                    <p>"Belum di TTD atau Sedang Diproses" adalah seluruh surat yang sudah diunggah oleh pengguna tetapi
-                        belum mendapatkan tanda tangan Ketua Prodi TI.</p>
-                </div>
-                <div id="panduanSection">
-                    <img id="imgPanduan" src="/img/panduan/sudahTTD.png" />
-                    <p>"Sudah di TTD" adalah seluruh surat yang sudah diunggah oleh pengguna dan sudah mendapatkan tanda
-                        tangan Ketua Prodi TI.</p>
-                </div>
-                <div id="panduanSection" class="mt-4">
-                    <img id="imgPanduan" src="/img/panduan/suratDitolak.png" />
-                    <p>"Surat Ditolak atau Ditolak" adalah seluruh surat yang sudah diunggah oleh pengguna namun ditolak
-                        karena ketidaksesuaian format ataupun isi surat.</p>
-                </div>
+                <p>Panduan penggunaan statistik surat dan status bimbingan.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" data-dismiss="modal">Mengerti</button>
@@ -240,73 +234,70 @@
 @stop
 
 @section('content')
+
 @if(array_intersect(['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat', 'kaprodi', 'sekprodi', 'admin_prodi'], $userRole))
     <h3>TTD Kaprodi</h3>
     <div class="info_box">
-        <x-adminlte-info-box class="mr-3" theme="primary" text="{{ $totalSuratTTD }}" title="Total Surat"
-            icon="fas fa-lg fa-inbox" />
-        <x-adminlte-info-box class="mr-3" theme="dark" text="{{ $belumTTD }}" title="Belum di TTD"
-            icon="fas fa-lg fa-file" />
-        <x-adminlte-info-box class="mr-3" theme="success" text="{{ $sudahTTD }}" title="Sudah di TTD"
-            icon="fas fa-lg fa-file-signature" />
-        <x-adminlte-info-box class="mr-3" theme="danger" text="{{ $ditolakTTD }}" title="Surat Ditolak"
-            icon="fas fa-lg fa-file-excel" />
+        <x-adminlte-info-box class="mr-3" theme="primary" text="{{ $totalSuratTTD }}" title="Total Surat" icon="fas fa-lg fa-inbox" />
+        <x-adminlte-info-box class="mr-3" theme="dark" text="{{ $belumTTD }}" title="Belum di TTD" icon="fas fa-lg fa-file" />
+        <x-adminlte-info-box class="mr-3" theme="success" text="{{ $sudahTTD }}" title="Sudah di TTD" icon="fas fa-lg fa-file-signature" />
+        <x-adminlte-info-box class="mr-3" theme="danger" text="{{ $ditolakTTD }}" title="Surat Ditolak" icon="fas fa-lg fa-file-excel" />
     </div>
-
     <hr>
-
     <h3>Permohonan Surat Tugas</h3>
     <div class="info_box">
-        <x-adminlte-info-box class="mr-3" theme="primary" text="{{ $totalSuratPT }}" title="Total Surat"
-            icon="fas fa-lg fa-inbox" />
-        <x-adminlte-info-box class="mr-3" theme="dark" text="{{ $PTdiproses }}" title="Sedang Diproses"
-            icon="fas fa-lg fa-file" />
-        <x-adminlte-info-box class="mr-3" theme="success" text="{{ $PTditerima }}" title="Diterima"
-            icon="fas fa-lg fa-file-signature" />
-        <x-adminlte-info-box class="mr-3" theme="danger" text="{{ $PTditolak }}" title="Ditolak"
-            icon="fas fa-lg fa-file-excel" />
+        <x-adminlte-info-box class="mr-3" theme="primary" text="{{ $totalSuratPT }}" title="Total Surat" icon="fas fa-lg fa-inbox" />
+        <x-adminlte-info-box class="mr-3" theme="dark" text="{{ $PTdiproses }}" title="Sedang Diproses" icon="fas fa-lg fa-file" />
+        <x-adminlte-info-box class="mr-3" theme="success" text="{{ $PTditerima }}" title="Diterima" icon="fas fa-lg fa-file-signature" />
+        <x-adminlte-info-box class="mr-3" theme="danger" text="{{ $PTditolak }}" title="Ditolak" icon="fas fa-lg fa-file-excel" />
     </div>
-
     <hr>
 @endif
 
 @if(array_intersect(['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'], $userRole))
-    <x-dekanat-dashboard />
+    <x-dekanat-dashboard 
+        :monitoringDekanat="$monitoringDekanat"
+    />
 @endif
 
 @if(array_intersect(['kaprodi', 'sekprodi', 'admin_prodi'], $userRole))
-    <x-kaprodi-dashboard />
+    <x-kaprodi-dashboard 
+        :totalDosen="$totalDosen" 
+        :totalMhs="$totalMhs" 
+        :prodiOngoing="$prodiOngoing" 
+        :prodiSelesai="$prodiSelesai" 
+        :monitoringDosen="$monitoringDosen"
+    />
 @endif
 
-@if(array_intersect(['dosen'], $userRole))
-    <x-dosen-dashboard :totalSuratPT="$totalSuratPT" :PTdiproses="$PTdiproses" :PTditerima="$PTditerima"
-        :PTditolak="$PTditolak" />
+@if(in_array('dosen', $userRole))
+    <x-dosen-dashboard 
+        :totalSuratPT="$totalSuratPT" 
+        :PTdiproses="$PTdiproses" 
+        :PTditerima="$PTditerima"
+        :PTditolak="$PTditolak" 
+        :bimbingan="$bimbingan"
+        :totalBimbingan="$totalBimbingan"
+        :bimbinganOngoing="$bimbinganOngoing"
+        :bimbinganSelesai="$bimbinganSelesai" 
+    />
 @endif
 
-@if(array_intersect(['mahasiswa'], $userRole))
-    <h3>TTD Kaprodi</h3>
+@if(in_array('mahasiswa', $userRole))
+    <h3>Statistik Surat Anda</h3>
     <div class="info_box">
-        <x-adminlte-info-box class="mr-3" theme="primary" text="{{ $totalSuratTTD }}" title="Total Surat"
-            icon="fas fa-lg fa-inbox" />
-        <x-adminlte-info-box class="mr-3" theme="dark" text="{{ $belumTTD }}" title="Belum di TTD"
-            icon="fas fa-lg fa-file" />
-        <x-adminlte-info-box class="mr-3" theme="success" text="{{ $sudahTTD }}" title="Sudah di TTD"
-            icon="fas fa-lg fa-file-signature" />
-        <x-adminlte-info-box class="mr-3" theme="danger" text="{{ $ditolakTTD }}" title="Surat Ditolak"
-            icon="fas fa-lg fa-file-excel" />
+        <x-adminlte-info-box class="mr-3" theme="primary" text="{{ $totalSuratTTD }}" title="Total Surat" icon="fas fa-lg fa-inbox" />
+        <x-adminlte-info-box class="mr-3" theme="dark" text="{{ $belumTTD }}" title="Belum di TTD" icon="fas fa-lg fa-file" />
+        <x-adminlte-info-box class="mr-3" theme="success" text="{{ $sudahTTD }}" title="Sudah di TTD" icon="fas fa-lg fa-file-signature" />
+        <x-adminlte-info-box class="mr-3" theme="danger" text="{{ $ditolakTTD }}" title="Surat Ditolak" icon="fas fa-lg fa-file-excel" />
     </div>
-
     <hr>
 @endif
 
-<p> Butuh bantuan? </p>
-<a href="https://chat.whatsapp.com/B87uLWeQEFVECsL54S6go5" target="_blank">
-    <p style="color: #4FCE5D">
+<div class="mt-4">
+    <p> Butuh bantuan? </p>
+    <a href="https://chat.whatsapp.com/B87uLWeQEFVECsL54S6go5" target="_blank" class="text-success">
         <i class="fab fa-whatsapp"></i> Hubungi kami via WhatsApp
-    </p>
-</a>
-@stop
-
-@section('css')
-<link rel="stylesheet" href="/css/styles.css">
+    </a>
+</div>
 @stop

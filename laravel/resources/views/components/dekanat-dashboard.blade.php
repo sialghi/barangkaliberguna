@@ -1,3 +1,5 @@
+@props(['monitoringDekanat'])
+
 <div class="row mt-4">
     <div class="col-12">
         <div class="card">
@@ -15,7 +17,6 @@
     </div>
 </div>
 
-{{-- Monitoring Dosen Section (Dekanat) --}}
 <div class="row mt-4 mb-3">
     <div class="col-md-12">
         <h2>Monitoring Dosen (Dekanat)</h2>
@@ -24,11 +25,9 @@
         <div class="form-group">
             <select class="form-control" id="prodiFilterDekanat">
                 <option value="all">Semua Jurusan</option>
-                <option value="Sistem Informasi">Sistem Informasi</option>
-                <option value="Teknik Informatika">Teknik Informatika</option>
-                <option value="Teknik Pertambangan">Teknik Pertambangan</option>
-                <option value="Fisika">Fisika</option>
-                <option value="Biologi">Biologi</option>
+                @foreach($monitoringDekanat->pluck('prodi')->unique() as $prodiName)
+                    <option value="{{ $prodiName }}">{{ $prodiName }}</option>
+                @endforeach
             </select>
         </div>
     </div>
@@ -46,91 +45,66 @@
             </x-slot>
 
             <tbody id="dekanat-dosen-accordion">
-                {{-- Dosen 1 --}}
-                <x-dosen-row id="dek-dosen1" name="Prof. Ahmad, M.T" prodi="Sistem Informasi" count="9" ongoing="6"
-                    finished="3" parent="#dekanat-dosen-accordion" data-prodi="Sistem Informasi">
-                    <x-student-row name="Klein Moretti" nim="11230910000097" title="Prediksi Dampak Pada Benda..."
-                        count="2" status="Ongoing" />
-                </x-dosen-row>
-
-                {{-- Dosen 2 --}}
-                <x-dosen-row id="dek-dosen2" name="Budi Sukario, M.Sc" prodi="Teknik Informatika" count="5" ongoing="5"
-                    finished="0" parent="#dekanat-dosen-accordion" data-prodi="Teknik Informatika">
-                    <x-student-row name="Student A" nim="11230910000001" title="Lorem ipsum..." count="5"
-                        status="Ongoing" />
-                </x-dosen-row>
-
-                {{-- Dosen 3 --}}
-                <x-dosen-row id="dek-dosen3" name="Azik Eaggers" prodi="Teknik Pertambangan" count="10" ongoing="6"
-                    finished="4" parent="#dekanat-dosen-accordion" data-prodi="Teknik Pertambangan">
-                    <x-student-row name="Student B" nim="11230910000002" title="Mining Data..." count="3"
-                        status="Ongoing" />
-                </x-dosen-row>
-
-                {{-- Dosen 4 --}}
-                <x-dosen-row id="dek-dosen4" name="Dunn Smith" prodi="Fisika" count="8" ongoing="6" finished="2"
-                    parent="#dekanat-dosen-accordion" data-prodi="Fisika">
-                    <x-student-row name="Student C" nim="11230910000003" title="Quantum Physics..." count="1"
-                        status="Ongoing" />
-                </x-dosen-row>
+                @foreach($monitoringDekanat as $dsn)
+                    <x-dosen-row 
+                        :id="'dek-dsn-' . $dsn->id" 
+                        :name="$dsn->nama" 
+                        :prodi="$dsn->prodi" 
+                        :count="$dsn->total_mhs" 
+                        :ongoing="$dsn->ongoing"
+                        :finished="$dsn->finished" 
+                        parent="#dekanat-dosen-accordion" 
+                        :data-prodi="$dsn->prodi"
+                    >
+                        @if($dsn->students->count() > 0)
+                            @foreach($dsn->students as $mhs)
+                                <x-student-row 
+                                    :name="$mhs->name" 
+                                    :nim="$mhs->nim_nip_nidn" 
+                                    :title="$mhs->judul_skripsi" 
+                                    :count="$mhs->sesi"
+                                    :status="is_null($mhs->id_nilai_sempro) ? 'Ongoing' : 'Selesai'" 
+                                />
+                            @endforeach
+                        @else
+                            <tr><td colspan="5" class="text-center text-muted">Tidak ada data bimbingan.</td></tr>
+                        @endif
+                    </x-dosen-row>
+                @endforeach
             </tbody>
 
-            {{-- Desktop Pagination for Dekanat Table --}}
             <x-slot name="footer">
                 <div class="d-flex justify-content-between align-items-center">
-                    <span class="text-muted text-sm">Halaman 1 dari 5 (20 Dosen)</span>
-                    <div>
-                        <button class="btn btn-sm btn-light border mr-1"><i class="fas fa-chevron-left text-xs"></i>
-                            Sebelumnya</button>
-                        <button class="btn btn-sm btn-white border font-weight-bold">Selanjutnya <i
-                                class="fas fa-chevron-right text-xs"></i></button>
-                    </div>
+                    <span class="text-muted text-sm" id="totalDosenText">Total: {{ $monitoringDekanat->count() }} Dosen</span>
+                    {{-- Navigasi Pagination tetap di sini --}}
                 </div>
             </x-slot>
 
+            {{-- Mobile Version --}}
             <x-slot name="mobile">
                 <div class="d-block d-md-none pb-3" id="mobile-dekanat-dosen-accordion">
-                    {{-- Dosen 1 --}}
-                    <x-dosen-mobile-card id="dek-mobile-dosen1" name="Prof. Ahmad, M.T" prodi="Sistem Informasi"
-                        count="9" ongoing="6" finished="3" parent="#mobile-dekanat-dosen-accordion"
-                        data-prodi="Sistem Informasi">
-                        <x-student-card name="Klein Moretti" nim="11230910000097" title="Prediksi Dampak Pada Benda..."
-                            count="2" status="Ongoing" />
-                    </x-dosen-mobile-card>
-
-                    {{-- Dosen 2 --}}
-                    <x-dosen-mobile-card id="dek-mobile-dosen2" name="Budi Sukario, M.Sc" prodi="Teknik Informatika"
-                        count="5" ongoing="5" finished="0" parent="#mobile-dekanat-dosen-accordion"
-                        data-prodi="Teknik Informatika">
-                        <x-student-card name="Student A" nim="11230910000001" title="Lorem ipsum..." count="5"
-                            status="Ongoing" />
-                    </x-dosen-mobile-card>
-
-                    {{-- Dosen 3 --}}
-                    <x-dosen-mobile-card id="dek-mobile-dosen3" name="Azik Eaggers" prodi="Teknik Pertambangan"
-                        count="10" ongoing="6" finished="4" parent="#mobile-dekanat-dosen-accordion"
-                        data-prodi="Teknik Pertambangan">
-                        <x-student-card name="Student B" nim="11230910000002" title="Mining Data..." count="3"
-                            status="Ongoing" />
-                    </x-dosen-mobile-card>
-
-                    {{-- Dosen 4 --}}
-                    <x-dosen-mobile-card id="dek-mobile-dosen4" name="Dunn Smith" prodi="Fisika" count="8" ongoing="6"
-                        finished="2" parent="#mobile-dekanat-dosen-accordion" data-prodi="Fisika">
-                        <x-student-card name="Student C" nim="11230910000003" title="Quantum Physics..." count="1"
-                            status="Ongoing" />
-                    </x-dosen-mobile-card>
-
-                    {{-- Mobile Pagination --}}
-                    <div class="d-flex flex-column align-items-center mt-3">
-                        <span class="text-muted text-sm mb-2">Halaman 1 dari 5 (20 Dosen)</span>
-                        <div>
-                            <button class="btn btn-sm btn-light border mr-1"><i class="fas fa-chevron-left text-xs"></i>
-                                Sebelumnya</button>
-                            <button class="btn btn-sm btn-white border font-weight-bold">Selanjutnya <i
-                                    class="fas fa-chevron-right text-xs"></i></button>
-                        </div>
-                    </div>
+                    @foreach($monitoringDekanat as $dsn)
+                        <x-dosen-mobile-card 
+                            :id="'dek-mob-' . $dsn->id" 
+                            :name="$dsn->nama" 
+                            :prodi="$dsn->prodi"
+                            :count="$dsn->total_mhs" 
+                            :ongoing="$dsn->ongoing" 
+                            :finished="$dsn->finished" 
+                            parent="#mobile-dekanat-dosen-accordion"
+                            :data-prodi="$dsn->prodi"
+                        >
+                            @foreach($dsn->students as $mhs)
+                                <x-student-card 
+                                    :name="$mhs->name" 
+                                    :nim="$mhs->nim_nip_nidn" 
+                                    :title="$mhs->judul_skripsi" 
+                                    :count="$mhs->sesi" 
+                                    :status="is_null($mhs->id_nilai_sempro) ? 'Ongoing' : 'Selesai'" 
+                                />
+                            @endforeach
+                        </x-dosen-mobile-card>
+                    @endforeach
                 </div>
             </x-slot>
         </x-table>
