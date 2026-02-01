@@ -128,14 +128,20 @@
                     @foreach($bimbingan as $item)
                         @php 
                             $isSelesai = !is_null($item->id_nilai_sempro);
+                            $statusSlug = $isSelesai ? 'selesai' : 'ongoing';
                         @endphp
-                        <x-student-card 
-                            :name="$item->nama_mahasiswa" 
-                            :nim="$item->nim"
-                            :title="$item->judul_skripsi" 
-                            :count="$item->jumlah_bimbingan" 
-                            :status="$isSelesai ? 'Selesai' : 'Ongoing'" 
-                        />
+                        
+                        {{-- TAMBAHKAN PEMBUNGKUS DIV DENGAN DATA-STATUS --}}
+                        <div data-status="{{ $statusSlug }}">
+                            <x-student-card 
+                                :name="$item->nama_mahasiswa" 
+                                :nim="$item->nim"
+                                :title="$item->judul_skripsi" 
+                                :count="$item->jumlah_bimbingan" 
+                                :status="$isSelesai ? 'Selesai' : 'Ongoing'" 
+                            />
+                        </div>
+                        
                     @endforeach
                 </div>
             </x-slot>

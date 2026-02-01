@@ -36,26 +36,37 @@
             }
         @endif
 
+        // LOGIKA FILTER PRODI (GLOBAL) - VERSI FIX ACCORDION
         $('#prodiFilterDekanat').on('change', function () {
             var selectedProdi = $(this).val();
             var $tbody = $('#dekanat-dosen-accordion');
+            
+            // Ambil semua baris dosen (yang punya atribut data-prodi)
+            var $lecturerRows = $tbody.find('tr[data-prodi]');
 
-            if (selectedProdi === 'all') {
-                $tbody.find('tr').show();
-            } else {
-                $tbody.find('tr').hide(); // Sembunyikan semua baris
+            $lecturerRows.each(function() {
+                var $thisDosenRow = $(this);
+                var $detailRow = $thisDosenRow.next('tr'); // Baris detail (list mahasiswa) tepat dibawahnya
                 
-                // Cari baris dosen yang cocok
-                $tbody.find('tr[data-prodi="' + selectedProdi + '"]').each(function() {
-                    $(this).show(); // Tampilkan baris dosen
-                    // Tampilkan juga baris detail (collapse container) tepat di bawahnya
-                    $(this).next('tr').addClass('d-none'); // Default detail tertutup tapi 'ada'
-                    $(this).next('tr').css('display', ''); // Reset display dari .hide() sebelumnya
-                });
-            }
+                // Cek apakah prodi cocok atau 'all'
+                if (selectedProdi === 'all' || $thisDosenRow.data('prodi') === selectedProdi) {
+                    // 1. Tampilkan Baris Dosen
+                    $thisDosenRow.show();
+                    
+                    // 2. [KUNCI PERBAIKAN] Reset display detail row
+                    // Jangan pakai .show(), tapi hapus properti display agar Bootstrap Collapse bisa bekerja lagi
+                    $detailRow.css('display', ''); 
+                } else {
+                    // 1. Sembunyikan Baris Dosen
+                    $thisDosenRow.hide();
+                    
+                    // 2. Sembunyikan Baris Detail juga (agar tidak melayang sendirian jika sedang terbuka)
+                    $detailRow.hide();
+                }
+            });
 
-            // Update Total Text
-            var count = $tbody.find('tr[data-prodi]:visible').length;
+            // Update Counter Total Dosen
+            var count = $lecturerRows.filter(':visible').length;
             $('#totalDosenText').text('Total: ' + count + ' Dosen');
         });
 
@@ -135,72 +146,146 @@
             @endif
     });
 
-    $(document).ready(function () {
+$(document).ready(function() {
+    
+    // --- 1. LOGIKA FILTER PRODI (GLOBAL) ---
     $('#prodiFilterDekanat').on('change', function () {
         var selectedProdi = $(this).val();
-
-        // --- Logika Filter Desktop ---
-        var desktopRows = $('#dekanat-dosen-accordion tr[data-prodi]');
+        var $rows = $('#dekanat-dosen-accordion > tr[data-prodi]'); // Hanya baris parent (dosen)
         
         if (selectedProdi === 'all') {
-            // Tampilkan semua baris jika pilih "Semua Jurusan"
-            $('#dekanat-dosen-accordion tr').show();
+            $rows.show();
         } else {
-            // Sembunyikan semua baris di dalam tbody
-            $('#dekanat-dosen-accordion tr').hide();
-            
-            // Tampilkan baris utama yang prodi-nya cocok
-            desktopRows.each(function() {
-                if ($(this).attr('data-prodi') === selectedProdi) {
-                    $(this).show();
-                    // Tampilkan juga baris detail bimbingan (baris berikutnya)
-                    $(this).next('tr').show(); 
-                }
-            });
+            $rows.hide();
+            $rows.filter('[data-prodi="' + selectedProdi + '"]').show();
         }
-
-        // --- Logika Filter Mobile ---
-        var mobileCards = $('#mobile-dekanat-dosen-accordion [data-prodi]');
         
-        if (selectedProdi === 'all') {
-            mobileCards.show();
-        } else {
-            mobileCards.hide();
-            mobileCards.filter('[data-prodi="' + selectedProdi + '"]').show();
-        }
-
-        var selectedProdi = $(this).val();
-        var desktopRows = $('#dekanat-dosen-accordion tr[data-prodi]');
-        
-        // 1. Logika Penyaringan (Filter)
-        if (selectedProdi === 'all') {
-            $('#dekanat-dosen-accordion tr').show();
-            $('#mobile-dekanat-dosen-accordion [data-prodi]').show();
-        } else {
-            // Sembunyikan semua dulu
-            $('#dekanat-dosen-accordion tr').hide();
-            $('#mobile-dekanat-dosen-accordion [data-prodi]').hide();
-            
-            // Tampilkan yang cocok (Desktop)
-            desktopRows.each(function() {
-                if ($(this).attr('data-prodi') === selectedProdi) {
-                    $(this).show();
-                    $(this).next('tr').show(); // Detail bimbingan
-                }
-            });
-
-            // Tampilkan yang cocok (Mobile)
-            $('#mobile-dekanat-dosen-accordion [data-prodi="' + selectedProdi + '"]').show();
-        }
-
-        // 2. UPDATE TOTAL DOSEN (Dinamis)
-        // Kita hitung jumlah baris data-prodi yang statusnya tidak hidden
-        var currentCount = $('#dekanat-dosen-accordion tr[data-prodi]:visible').length;
-        
-        // Update teks di UI
-        $('#totalDosenText').text('Total: ' + currentCount + ' Dosen');
+        // Update Counter
+        $('#totalDosenText').text('Total: ' + $rows.filter(':visible').length + ' Dosen');
     });
+
+    $(document).on('click', '.btn-filter-inner', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        var $btn = $(this);
+        var filterType = $btn.data('filter'); // 'all', 'ongoing', 'selesai'
+        
+        // 1. Ubah Tampilan Tombol
+        $btn.siblings().removeClass('btn-primary').addClass('btn-secondary');
+        $btn.removeClass('btn-secondary').addClass('btn-primary');
+
+        // 2. Cari Container & Baris Data
+        var $container = $btn.closest('.collapse');
+        var $tbody = $container.find('table.inner-table tbody');
+        
+        // Ambil hanya baris data mahasiswa (abaikan baris pesan kosong jika sudah ada)
+        var $studentRows = $tbody.find('tr[data-status]'); 
+
+        // 3. Logika Filtering
+        if (filterType === 'all') {
+            $studentRows.show();
+        } else {
+            $studentRows.hide();
+            $studentRows.filter(function() {
+                return $(this).data('status') === filterType;
+            }).show();
+        }
+
+        // 4. LOGIKA BARU: Cek Empty State (Tidak ada data)
+        // Hitung berapa baris mahasiswa yang terlihat
+        var visibleCount = $studentRows.filter(':visible').length;
+        var $emptyMsgRow = $tbody.find('.dynamic-empty-msg'); // Cari baris pesan kosong custom
+
+        if (visibleCount === 0) {
+            // Jika tidak ada mahasiswa yang tampil, munculkan pesan
+            if ($emptyMsgRow.length === 0) {
+                // Buat baris baru jika belum ada
+                var msg = '<tr class="dynamic-empty-msg"><td colspan="5" class="text-center text-muted font-italic py-3">Tidak ada mahasiswa bimbingan dengan status ini.</td></tr>';
+                $tbody.append(msg);
+            } else {
+                // Tampilkan jika sudah ada (tapi tersembunyi)
+                $emptyMsgRow.show();
+            }
+        } else {
+            // Jika ada mahasiswa, sembunyikan pesan kosong
+            if ($emptyMsgRow.length > 0) {
+                $emptyMsgRow.hide();
+            }
+        }
+    });
+
 });
+
+$(document).on('click', '.btn-filter', function() {
+    var $btn = $(this);
+    var filterType = $btn.data('filter'); // 'all', 'ongoing', 'selesai'
+    
+    // 1. Ubah Tampilan Tombol
+    $btn.siblings().removeClass('btn-primary').addClass('btn-secondary');
+    $btn.removeClass('btn-secondary').addClass('btn-primary');
+
+    // 2. Cari Container Tabel & Mobile
+    // Mencari baris row tabel yang terletak setelah row tombol filter
+    var $dashboardRow = $btn.closest('.row').next('.row'); 
+    var $tbody = $dashboardRow.find('table tbody');
+    var $rows = $tbody.find('tr[data-status]'); // Hanya baris data (bukan baris pesan kosong)
+
+    // 3. Filter Baris Tabel (Desktop)
+    if (filterType === 'all') {
+        $rows.show();
+    } else {
+        $rows.hide();
+        $rows.filter('[data-status="' + filterType + '"]').show();
+    }
+
+    // --- LOGIKA PESAN "TIDAK ADA DATA" (DESKTOP) ---
+    var visibleCount = $rows.filter(':visible').length;
+    var $emptyRow = $tbody.find('.dosen-empty-msg'); // Cari baris pesan kosong
+
+    if (visibleCount === 0) {
+        if ($emptyRow.length === 0) {
+            // Buat baris pesan jika belum ada
+            var msg = '<tr class="dosen-empty-msg"><td colspan="5" class="text-center text-muted font-italic py-4">Tidak ada mahasiswa bimbingan dengan status ini.</td></tr>';
+            $tbody.append(msg);
+        } else {
+            $emptyRow.show();
+        }
+    } else {
+        // Sembunyikan pesan jika data ada
+        if ($emptyRow.length > 0) {
+            $emptyRow.hide();
+        }
+    }
+
+    // 4. Filter Mobile (Optional - Jika Anda menggunakan view mobile)
+    var $mobileContainer = $dashboardRow.find('.d-md-none');
+    var $mobileCards = $mobileContainer.children('div[data-status]'); // Div pembungkus yg kita buat tadi
+
+    if ($mobileCards.length > 0) {
+        if (filterType === 'all') {
+            $mobileCards.show();
+        } else {
+            $mobileCards.hide();
+            $mobileCards.filter('[data-status="' + filterType + '"]').show();
+        }
+
+        // Logika Pesan Kosong Mobile
+        var visibleMobile = $mobileCards.filter(':visible').length;
+        var $emptyMobile = $mobileContainer.find('.mobile-empty-msg');
+
+        if (visibleMobile === 0) {
+            if ($emptyMobile.length === 0) {
+                $mobileContainer.append('<div class="text-center text-muted font-italic py-4 mobile-empty-msg">Tidak ada data.</div>');
+            } else {
+                $emptyMobile.show();
+            }
+        } else {
+            $emptyMobile.hide();
+        }
+    }
+});
+
 </script>
 @stop
 

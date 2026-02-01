@@ -21,9 +21,9 @@
                     <button type="button" class="btn btn-primary btn-sm btn-filter-inner"
                         data-target="#collapse-{{ $id }}" data-filter="all">Semua</button>
                     <button type="button" class="btn btn-secondary btn-sm btn-filter-inner"
-                        data-target="#collapse-{{ $id }}" data-filter="selesai">Selesai</button>
-                    <button type="button" class="btn btn-secondary btn-sm btn-filter-inner"
                         data-target="#collapse-{{ $id }}" data-filter="ongoing">Ongoing</button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-filter-inner"
+                        data-target="#collapse-{{ $id }}" data-filter="selesai">Selesai</button>
                 </div>
 
                 <table class="table table-sm table-borderless inner-table">

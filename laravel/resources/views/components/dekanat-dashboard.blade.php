@@ -1,5 +1,6 @@
 @props(['monitoringDekanat'])
 
+{{-- 1. CHART --}}
 <div class="row mt-4">
     <div class="col-12">
         <div class="card">
@@ -17,6 +18,7 @@
     </div>
 </div>
 
+{{-- 2. HEADER & FILTER PRODI (GLOBAL) --}}
 <div class="row mt-4 mb-3">
     <div class="col-md-12">
         <h2>Monitoring Dosen (Dekanat)</h2>
@@ -33,6 +35,7 @@
     </div>
 </div>
 
+{{-- 3. TABEL --}}
 <div class="row">
     <div class="col-12">
         <x-table>
@@ -46,6 +49,8 @@
 
             <tbody id="dekanat-dosen-accordion">
                 @foreach($monitoringDekanat as $dsn)
+                    {{-- Panggil Component Child --}}
+                    {{-- Component ini sudah punya tombol filter di dalamnya (sesuai instruksi Anda) --}}
                     <x-dosen-row 
                         :id="'dek-dsn-' . $dsn->id" 
                         :name="$dsn->nama" 
@@ -56,19 +61,27 @@
                         parent="#dekanat-dosen-accordion" 
                         :data-prodi="$dsn->prodi"
                     >
-                        @if($dsn->students->count() > 0)
+                      @if($dsn->students->count() > 0)
                             @foreach($dsn->students as $mhs)
+                                @php 
+                                    $statusSlug = is_null($mhs->id_nilai_sempro) ? 'ongoing' : 'selesai'; 
+                                @endphp
+                                {{-- Pastikan data-status dikirim agar filter JS bisa membacanya --}}
                                 <x-student-row 
                                     :name="$mhs->name" 
                                     :nim="$mhs->nim_nip_nidn" 
                                     :title="$mhs->judul_skripsi" 
                                     :count="$mhs->sesi"
-                                    :status="is_null($mhs->id_nilai_sempro) ? 'Ongoing' : 'Selesai'" 
+                                    :status="ucfirst($statusSlug)"
+                                    :data-status="$statusSlug" 
                                 />
                             @endforeach
                         @else
-                            <tr><td colspan="5" class="text-center text-muted">Tidak ada data bimbingan.</td></tr>
+                            <tr>
+                                <  td colspan="5" class="text-center text-muted">Tidak ada data bimbingan.</td>
+                            </tr>
                         @endif
+                    
                     </x-dosen-row>
                 @endforeach
             </tbody>
@@ -76,12 +89,11 @@
             <x-slot name="footer">
                 <div class="d-flex justify-content-between align-items-center">
                     <span class="text-muted text-sm" id="totalDosenText">Total: {{ $monitoringDekanat->count() }} Dosen</span>
-                    {{-- Navigasi Pagination tetap di sini --}}
                 </div>
             </x-slot>
 
-            {{-- Mobile Version --}}
             <x-slot name="mobile">
+                {{-- Mobile view logic (sama seperti sebelumnya) --}}
                 <div class="d-block d-md-none pb-3" id="mobile-dekanat-dosen-accordion">
                     @foreach($monitoringDekanat as $dsn)
                         <x-dosen-mobile-card 
@@ -94,6 +106,7 @@
                             parent="#mobile-dekanat-dosen-accordion"
                             :data-prodi="$dsn->prodi"
                         >
+                            {{-- Jika mobile card juga punya filter, tambahkan di sini --}}
                             @foreach($dsn->students as $mhs)
                                 <x-student-card 
                                     :name="$mhs->name" 
