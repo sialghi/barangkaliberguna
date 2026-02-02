@@ -103,7 +103,10 @@
 
             @foreach($bimbingan as $item)
                 @php 
-                    $isSelesai = !is_null($item->id_nilai_sempro);
+                    // PERBAIKAN LOGIKA STATUS:
+                    // Menggunakan properti is_finished dari Controller (hasil cek kelengkapan nilai)
+                    // Jika is_finished == 1 -> Selesai, Jika 0 -> Ongoing
+                    $isSelesai = $item->is_finished == 1;
                     $statusSlug = $isSelesai ? 'selesai' : 'ongoing';
                 @endphp
                 <tr data-status="{{ $statusSlug }}">
@@ -127,7 +130,8 @@
                 <div class="d-block d-md-none">
                     @foreach($bimbingan as $item)
                         @php 
-                            $isSelesai = !is_null($item->id_nilai_sempro);
+                            // LOGIKA YANG SAMA UNTUK MOBILE
+                            $isSelesai = $item->is_finished == 1;
                             $statusSlug = $isSelesai ? 'selesai' : 'ongoing';
                         @endphp
                         

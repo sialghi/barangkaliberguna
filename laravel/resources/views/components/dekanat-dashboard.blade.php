@@ -1,6 +1,6 @@
 @props(['monitoringDekanat'])
 
-{{-- 1. CHART --}}
+{{-- 1. CHART STATISTIK --}}
 <div class="row mt-4">
     <div class="col-12">
         <div class="card">
@@ -35,22 +35,22 @@
     </div>
 </div>
 
-{{-- 3. TABEL --}}
+{{-- 3. TABEL DATA --}}
 <div class="row">
     <div class="col-12">
         <x-table>
             <x-slot name="header">
                 <th style="width: 25%">Nama Dosen</th>
                 <th style="width: 25%">Prodi</th>
-                <th style="width: 25%">Mahasiswa</th>
+                <th style="width: 20%">Mahasiswa</th>
                 <th style="width: 15%" class="text-center">On-Going</th>
                 <th style="width: 15%" class="text-center">Finished</th>
             </x-slot>
 
             <tbody id="dekanat-dosen-accordion">
                 @foreach($monitoringDekanat as $dsn)
-                    {{-- Panggil Component Child --}}
-                    {{-- Component ini sudah punya tombol filter di dalamnya (sesuai instruksi Anda) --}}
+                    {{-- Component Child (Dosen Row) --}}
+                    {{-- Tombol filter lokal sudah ada di dalam component ini --}}
                     <x-dosen-row 
                         :id="'dek-dsn-' . $dsn->id" 
                         :name="$dsn->nama" 
@@ -61,27 +61,30 @@
                         parent="#dekanat-dosen-accordion" 
                         :data-prodi="$dsn->prodi"
                     >
-                      @if($dsn->students->count() > 0)
+                        @if($dsn->students->count() > 0)
                             @foreach($dsn->students as $mhs)
                                 @php 
-                                    $statusSlug = is_null($mhs->id_nilai_sempro) ? 'ongoing' : 'selesai'; 
+                                    // LOGIKA BARU: Cek flag is_finished dari controller
+                                    $isSelesai = $mhs->is_finished == 1;
+                                    $statusSlug = $isSelesai ? 'selesai' : 'ongoing';
                                 @endphp
-                                {{-- Pastikan data-status dikirim agar filter JS bisa membacanya --}}
+                                
+                                {{-- Mengirim data-status agar filter JS bekerja --}}
                                 <x-student-row 
                                     :name="$mhs->name" 
                                     :nim="$mhs->nim_nip_nidn" 
                                     :title="$mhs->judul_skripsi" 
                                     :count="$mhs->sesi"
-                                    :status="ucfirst($statusSlug)"
+                                    :status="$isSelesai ? 'Selesai' : 'Ongoing'"
                                     :data-status="$statusSlug" 
                                 />
                             @endforeach
                         @else
+                            {{-- Pesan Kosong --}}
                             <tr>
-                                <  td colspan="5" class="text-center text-muted">Tidak ada data bimbingan.</td>
+                                <td colspan="5" class="text-center text-muted italic">Tidak ada data bimbingan.</td>
                             </tr>
                         @endif
-                    
                     </x-dosen-row>
                 @endforeach
             </tbody>
@@ -93,7 +96,6 @@
             </x-slot>
 
             <x-slot name="mobile">
-                {{-- Mobile view logic (sama seperti sebelumnya) --}}
                 <div class="d-block d-md-none pb-3" id="mobile-dekanat-dosen-accordion">
                     @foreach($monitoringDekanat as $dsn)
                         <x-dosen-mobile-card 
@@ -106,14 +108,20 @@
                             parent="#mobile-dekanat-dosen-accordion"
                             :data-prodi="$dsn->prodi"
                         >
-                            {{-- Jika mobile card juga punya filter, tambahkan di sini --}}
                             @foreach($dsn->students as $mhs)
+                                @php 
+                                    $isSelesai = $mhs->is_finished == 1;
+                                    $statusSlug = $isSelesai ? 'selesai' : 'ongoing';
+                                @endphp
+                                
+                                {{-- Card Mobile dengan Status yang Benar --}}
                                 <x-student-card 
                                     :name="$mhs->name" 
                                     :nim="$mhs->nim_nip_nidn" 
                                     :title="$mhs->judul_skripsi" 
                                     :count="$mhs->sesi" 
-                                    :status="is_null($mhs->id_nilai_sempro) ? 'Ongoing' : 'Selesai'" 
+                                    :status="$isSelesai ? 'Selesai' : 'Ongoing'"
+                                    :data-status="$statusSlug"
                                 />
                             @endforeach
                         </x-dosen-mobile-card>

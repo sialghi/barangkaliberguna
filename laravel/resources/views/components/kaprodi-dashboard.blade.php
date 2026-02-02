@@ -7,9 +7,9 @@
     </div>
 </div>
 
+{{-- BAGIAN INFO BOX & CHART (Tetap Sama Sesuai Desain) --}}
 <div class="row">
     <div class="col-md-5">
-        {{-- Info Box: Total Dosen --}}
         <div class="info-box bg-white">
             <span class="info-box-icon bg-dark elevation-1"><i class="fas fa-chalkboard-teacher"></i></span>
             <div class="info-box-content">
@@ -17,8 +17,6 @@
                 <span class="info-box-number">{{ $totalDosen }}</span>
             </div>
         </div>
-
-        {{-- Info Box: Total Mahasiswa --}}
         <div class="info-box bg-white">
             <span class="info-box-icon bg-info elevation-1"><i class="fas fa-users"></i></span>
             <div class="info-box-content">
@@ -26,8 +24,6 @@
                 <span class="info-box-number">{{ $totalMhs }}</span>
             </div>
         </div>
-
-        {{-- Info Box: Ongoing --}}
         <div class="info-box bg-white">
             <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-spinner"></i></span>
             <div class="info-box-content">
@@ -35,8 +31,6 @@
                 <span class="info-box-number">{{ $prodiOngoing }}</span>
             </div>
         </div>
-
-        {{-- Info Box: Finished --}}
         <div class="info-box bg-white">
             <span class="info-box-icon bg-success elevation-1"><i class="fas fa-check-circle"></i></span>
             <div class="info-box-content">
@@ -46,7 +40,6 @@
         </div>
     </div>
 
-    {{-- Chart Section --}}
     <div class="col-md-7">
         <x-chart-card title="Bimbingan per Kategori" id="bimbinganChartProdi">
             <ul class="list-unstyled">
@@ -57,7 +50,7 @@
     </div>
 </div>
 
-{{-- Monitoring Dosen Section --}}
+{{-- MONITORING DOSEN SECTION --}}
 <div class="row mt-4 mb-3">
     <div class="col-12">
         <h3>Monitoring Dosen</h3>
@@ -75,57 +68,81 @@
                 <th style="width: 15%" class="text-center">Finished</th>
             </x-slot>
 
-            {{-- Desktop Body --}}
+            {{-- DESKTOP BODY --}}
             <tbody id="desktop-dosen-accordion">
                 @foreach($monitoringDosen as $dsn)
-                <x-dosen-row 
-                    :id="'dsn'.$dsn->id" 
-                    :name="$dsn->nama" 
-                    prodi="Teknik Informatika" 
-                    :count="$dsn->total_mhs" 
-                    :ongoing="$dsn->ongoing" 
-                    :finished="$dsn->finished" 
-                    parent="#desktop-dosen-accordion"
-                >
-                    @foreach($dsn->students as $mhs)
-                    <x-student-row 
-                        :name="$mhs->nama_mahasiswa" 
-                        :nim="$mhs->nim_mahasiswa" 
-                        :title="$mhs->judul_skripsi" 
-                        :count="$mhs->sesi" 
-                        :status="is_null($mhs->id_nilai_sempro) ? 'Ongoing' : 'Selesai'" 
-                    />
-                    @endforeach
-                </x-dosen-row>
-                @endforeach
-            </tbody>
-
-            {{-- Mobile Body --}}
-            <x-slot name="mobile">
-                <div class="d-block d-md-none pb-3" id="mobile-dosen-accordion">
-                    @foreach($monitoringDosen as $dsn)
-                    <x-dosen-mobile-card 
-                        :id="'mob'.$dsn->id" 
+                    {{-- Panggil Component Child (Dosen Row) --}}
+                    {{-- Component ini sudah punya tombol filter lokal di dalamnya --}}
+                    <x-dosen-row 
+                        :id="'dsn'.$dsn->id" 
                         :name="$dsn->nama" 
                         prodi="Teknik Informatika" 
                         :count="$dsn->total_mhs" 
                         :ongoing="$dsn->ongoing" 
                         :finished="$dsn->finished" 
-                        parent="#mobile-dosen-accordion"
+                        parent="#desktop-dosen-accordion"
                     >
-                        @foreach($dsn->students as $mhs)
-                        <x-student-card 
-                            :name="$mhs->nama_mahasiswa" 
-                            :nim="$mhs->nim_mahasiswa" 
-                            :title="$mhs->judul_skripsi" 
-                            :count="$mhs->sesi" 
-                            :status="is_null($mhs->id_nilai_sempro) ? 'Ongoing' : 'Selesai'" 
-                        />
-                        @endforeach
-                    </x-dosen-mobile-card>
+                        @if($dsn->students->count() > 0)
+                            @foreach($dsn->students as $mhs)
+                                @php 
+                                    // Logika Status
+                                    $isSelesai = $mhs->is_finished == 1;
+                                    $statusSlug = $isSelesai ? 'selesai' : 'ongoing';
+                                @endphp
+                                
+                                {{-- PERBAIKAN: Kirim data-status untuk filter JS --}}
+                                <x-student-row 
+                                    :name="$mhs->nama_mahasiswa" 
+                                    :nim="$mhs->nim_mahasiswa" 
+                                    :title="$mhs->judul_skripsi" 
+                                    :count="$mhs->sesi" 
+                                    :status="$isSelesai ? 'Selesai' : 'Ongoing'"
+                                    :data-status="$statusSlug"
+                                />
+                            @endforeach
+                        @else
+                            {{-- Pesan Kosong --}}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted italic">Tidak ada data bimbingan.</td>
+                            </tr>
+                        @endif
+                    </x-dosen-row>
+                @endforeach
+            </tbody>
+
+            {{-- MOBILE BODY --}}
+            <x-slot name="mobile">
+                <div class="d-block d-md-none pb-3" id="mobile-dosen-accordion">
+                    @foreach($monitoringDosen as $dsn)
+                        <x-dosen-mobile-card 
+                            :id="'mob'.$dsn->id" 
+                            :name="$dsn->nama" 
+                            prodi="Teknik Informatika" 
+                            :count="$dsn->total_mhs" 
+                            :ongoing="$dsn->ongoing" 
+                            :finished="$dsn->finished" 
+                            parent="#mobile-dosen-accordion"
+                        >
+                            @foreach($dsn->students as $mhs)
+                                @php 
+                                    $isSelesai = $mhs->is_finished == 1;
+                                    $statusSlug = $isSelesai ? 'selesai' : 'ongoing';
+                                @endphp
+                                
+                                {{-- Card Mobile dengan Status --}}
+                                <x-student-card 
+                                    :name="$mhs->nama_mahasiswa" 
+                                    :nim="$mhs->nim_mahasiswa" 
+                                    :title="$mhs->judul_skripsi" 
+                                    :count="$mhs->sesi" 
+                                    :status="$isSelesai ? 'Selesai' : 'Ongoing'"
+                                    :data-status="$statusSlug"
+                                />
+                            @endforeach
+                        </x-dosen-mobile-card>
                     @endforeach
 
-                    {{-- Mobile Pagination UI (Statis sesuai desain, bisa dibuat dinamis nanti) --}}
+                    {{-- Mobile Pagination (UI Saja) --}}
                     <div class="d-flex flex-column align-items-center mt-3">
                         <span class="text-muted text-sm mb-2">Halaman 1 dari 5 ({{ $monitoringDosen->count() }} Dosen)</span>
                         <div>

@@ -10,77 +10,60 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     $(document).ready(function () {
-        // --- 1. DOSEN CHART (Dinamis dari Database) ---
+        // --- 1. DOSEN CHART ---
+        // PENTING: Data chart ini ($bimbinganSelesai, $bimbinganOngoing) 
+        // harus sudah dihitung dengan logika Nilai Skripsi Lengkap di Controller.
         @if(in_array('dosen', $userRole))
             if ($('#bimbinganChart').length) {
                 var donutChartCanvas = $('#bimbinganChart').get(0).getContext('2d');
-                var donutData = {
-                    labels: ['Selesai (Finished)', 'Sedang Berjalan (On-Going)'],
-                    datasets: [{
-                        // Mengambil data dari variabel bimbinganSelesai dan bimbinganOngoing
-                        data: [{{ $bimbinganSelesai ?? 0 }}, {{ $bimbinganOngoing ?? 0 }}],
-                        backgroundColor: ['#28a745', '#fd7e14'],
-                    }]
-                }
-                var donutOptions = {
-                    maintainAspectRatio: false,
-                    responsive: true,
-                    legend: { display: false },
-                    cutout: '0%',
-                }
                 new Chart(donutChartCanvas, {
                     type: 'pie',
-                    data: donutData,
-                    options: donutOptions
+                    data: {
+                        labels: ['Selesai (Finished)', 'Sedang Berjalan (On-Going)'],
+                        datasets: [{
+                            data: [{{ $bimbinganSelesai ?? 0 }}, {{ $bimbinganOngoing ?? 0 }}],
+                            backgroundColor: ['#28a745', '#fd7e14'],
+                        }]
+                    },
+                    options: { maintainAspectRatio: false, responsive: true, legend: { display: false }, cutout: '0%' }
                 })
             }
         @endif
 
-        // LOGIKA FILTER PRODI (GLOBAL) - VERSI FIX ACCORDION
+        // --- 2. LOGIKA FILTER PRODI (GLOBAL) ---
         $('#prodiFilterDekanat').on('change', function () {
             var selectedProdi = $(this).val();
             var $tbody = $('#dekanat-dosen-accordion');
-            
-            // Ambil semua baris dosen (yang punya atribut data-prodi)
             var $lecturerRows = $tbody.find('tr[data-prodi]');
 
             $lecturerRows.each(function() {
                 var $thisDosenRow = $(this);
-                var $detailRow = $thisDosenRow.next('tr'); // Baris detail (list mahasiswa) tepat dibawahnya
+                var $detailRow = $thisDosenRow.next('tr');
                 
-                // Cek apakah prodi cocok atau 'all'
                 if (selectedProdi === 'all' || $thisDosenRow.data('prodi') === selectedProdi) {
-                    // 1. Tampilkan Baris Dosen
                     $thisDosenRow.show();
-                    
-                    // 2. [KUNCI PERBAIKAN] Reset display detail row
-                    // Jangan pakai .show(), tapi hapus properti display agar Bootstrap Collapse bisa bekerja lagi
                     $detailRow.css('display', ''); 
                 } else {
-                    // 1. Sembunyikan Baris Dosen
                     $thisDosenRow.hide();
-                    
-                    // 2. Sembunyikan Baris Detail juga (agar tidak melayang sendirian jika sedang terbuka)
                     $detailRow.hide();
                 }
             });
 
-            // Update Counter Total Dosen
             var count = $lecturerRows.filter(':visible').length;
             $('#totalDosenText').text('Total: ' + count + ' Dosen');
         });
 
-        // --- 2. Dekanat Bar Chart (Fix Skala 1 Mahasiswa) ---
+        // --- 3. CHART DEKANAT ---
         @if(array_intersect(['dekan', 'wadek_satu', 'admin_dekanat'], $userRole))
             if ($('#dekanatChart').length) {
                 var ctx = $('#dekanatChart').get(0).getContext('2d');
                 new Chart(ctx, {
                     type: 'bar',
                     data: {
-                        labels: @json($chartLabels),
+                        labels: @json($chartLabels ?? []),
                         datasets: [{
                             label: 'Jumlah Mahasiswa Bimbingan',
-                            data: @json($chartData),
+                            data: @json($chartData ?? []),
                             backgroundColor: 'rgba(60, 141, 188, 0.9)',
                             borderWidth: 1
                         }]
@@ -89,20 +72,14 @@
                         maintainAspectRatio: false,
                         responsive: true,
                         scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    stepSize: 1, // Agar angka 1, 2, 3 terlihat jelas
-                                    precision: 0
-                                }
-                                // Hapus 'max' agar skala menyesuaikan otomatis (Auto-scale)
-                            }
+                            y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } }
                         }
                     }
                 });
             }
         @endif
 
+        // --- 4. CHART PRODI ---
         @if(array_intersect(['kaprodi', 'sekprodi', 'admin_prodi'], $userRole))
             if ($('#bimbinganChartProdi').length) {
                 var prodiChartCanvas = $('#bimbinganChartProdi').get(0).getContext('2d');
@@ -120,172 +97,82 @@
             }
         @endif
 
-        // --- 3. DEKANAT CHART ---
-        @if(array_intersect(['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'], $userRole))
-            if ($('#dekanatChart').length) {
-                    var dekanatChartCanvas = $('#dekanatChart').get(0).getContext('2d');
-                    new Chart(dekanatChartCanvas, {
-                        type: 'bar',
-                        data: {
-                            labels: @json($chartLabels), // Nama-nama Prodi
-                            datasets: [{
-                                label: 'Total Mahasiswa Bimbingan',
-                                data: @json($chartData), // Jumlah mahasiswa per prodi
-                                backgroundColor: 'rgba(60, 141, 188, 0.9)',
-                            }]
-                        },
-                        options: {
-                            maintainAspectRatio: false,
-                            responsive: true,
-                            scales: {
-                                y: { beginAtZero: true, ticks: { stepSize: 1 } }
-                            }
-                        }
-                    });
+        // --- 5. LOGIKA FILTER STATUS (LOKAL CHILD) ---
+        $(document).on('click', '.btn-filter-inner', function(e) {
+            e.preventDefault(); e.stopPropagation();
+            var $btn = $(this);
+            var filterType = $btn.data('filter');
+            
+            $btn.siblings().removeClass('btn-primary').addClass('btn-secondary');
+            $btn.removeClass('btn-secondary').addClass('btn-primary');
+
+            var $container = $btn.closest('.collapse');
+            var $tbody = $container.find('table.inner-table tbody');
+            var $studentRows = $tbody.find('tr[data-status]'); 
+
+            if (filterType === 'all') {
+                $studentRows.show();
+            } else {
+                $studentRows.hide();
+                $studentRows.filter(function() { return $(this).data('status') === filterType; }).show();
+            }
+
+            // Empty State Logic
+            var visibleCount = $studentRows.filter(':visible').length;
+            var $emptyMsgRow = $tbody.find('.dynamic-empty-msg');
+
+            if (visibleCount === 0) {
+                if ($emptyMsgRow.length === 0) {
+                    $tbody.append('<tr class="dynamic-empty-msg"><td colspan="5" class="text-center text-muted font-italic py-3">Tidak ada mahasiswa bimbingan dengan status ini.</td></tr>');
+                } else { $emptyMsgRow.show(); }
+            } else {
+                if ($emptyMsgRow.length > 0) { $emptyMsgRow.hide(); }
+            }
+        });
+
+        // --- 6. LOGIKA FILTER DOSEN (SIMPLE TABLE) ---
+        $(document).on('click', '.btn-filter', function() {
+            var $btn = $(this);
+            var filterType = $btn.data('filter');
+            
+            $btn.siblings().removeClass('btn-primary').addClass('btn-secondary');
+            $btn.removeClass('btn-secondary').addClass('btn-primary');
+
+            var $dashboardRow = $btn.closest('.row').next('.row'); 
+            var $tbody = $dashboardRow.find('table tbody');
+            var $rows = $tbody.find('tr[data-status]');
+
+            if (filterType === 'all') { $rows.show(); } else {
+                $rows.hide(); $rows.filter('[data-status="' + filterType + '"]').show();
+            }
+
+            var visibleCount = $rows.filter(':visible').length;
+            var $emptyRow = $tbody.find('.dosen-empty-msg');
+
+            if (visibleCount === 0) {
+                if ($emptyRow.length === 0) {
+                    $tbody.append('<tr class="dosen-empty-msg"><td colspan="5" class="text-center text-muted font-italic py-4">Tidak ada mahasiswa bimbingan dengan status ini.</td></tr>');
+                } else { $emptyRow.show(); }
+            } else { if ($emptyRow.length > 0) { $emptyRow.hide(); } }
+
+            // Mobile Filter Logic
+            var $mobileContainer = $dashboardRow.find('.d-md-none');
+            var $mobileCards = $mobileContainer.children('div[data-status]');
+            if ($mobileCards.length > 0) {
+                if (filterType === 'all') { $mobileCards.show(); } else {
+                    $mobileCards.hide(); $mobileCards.filter('[data-status="' + filterType + '"]').show();
                 }
-            @endif
-    });
-
-$(document).ready(function() {
-    
-    // --- 1. LOGIKA FILTER PRODI (GLOBAL) ---
-    $('#prodiFilterDekanat').on('change', function () {
-        var selectedProdi = $(this).val();
-        var $rows = $('#dekanat-dosen-accordion > tr[data-prodi]'); // Hanya baris parent (dosen)
-        
-        if (selectedProdi === 'all') {
-            $rows.show();
-        } else {
-            $rows.hide();
-            $rows.filter('[data-prodi="' + selectedProdi + '"]').show();
-        }
-        
-        // Update Counter
-        $('#totalDosenText').text('Total: ' + $rows.filter(':visible').length + ' Dosen');
-    });
-
-    $(document).on('click', '.btn-filter-inner', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        var $btn = $(this);
-        var filterType = $btn.data('filter'); // 'all', 'ongoing', 'selesai'
-        
-        // 1. Ubah Tampilan Tombol
-        $btn.siblings().removeClass('btn-primary').addClass('btn-secondary');
-        $btn.removeClass('btn-secondary').addClass('btn-primary');
-
-        // 2. Cari Container & Baris Data
-        var $container = $btn.closest('.collapse');
-        var $tbody = $container.find('table.inner-table tbody');
-        
-        // Ambil hanya baris data mahasiswa (abaikan baris pesan kosong jika sudah ada)
-        var $studentRows = $tbody.find('tr[data-status]'); 
-
-        // 3. Logika Filtering
-        if (filterType === 'all') {
-            $studentRows.show();
-        } else {
-            $studentRows.hide();
-            $studentRows.filter(function() {
-                return $(this).data('status') === filterType;
-            }).show();
-        }
-
-        // 4. LOGIKA BARU: Cek Empty State (Tidak ada data)
-        // Hitung berapa baris mahasiswa yang terlihat
-        var visibleCount = $studentRows.filter(':visible').length;
-        var $emptyMsgRow = $tbody.find('.dynamic-empty-msg'); // Cari baris pesan kosong custom
-
-        if (visibleCount === 0) {
-            // Jika tidak ada mahasiswa yang tampil, munculkan pesan
-            if ($emptyMsgRow.length === 0) {
-                // Buat baris baru jika belum ada
-                var msg = '<tr class="dynamic-empty-msg"><td colspan="5" class="text-center text-muted font-italic py-3">Tidak ada mahasiswa bimbingan dengan status ini.</td></tr>';
-                $tbody.append(msg);
-            } else {
-                // Tampilkan jika sudah ada (tapi tersembunyi)
-                $emptyMsgRow.show();
+                // Mobile Empty Msg
+                var visibleMobile = $mobileCards.filter(':visible').length;
+                var $emptyMobile = $mobileContainer.find('.mobile-empty-msg');
+                if (visibleMobile === 0) {
+                    if ($emptyMobile.length === 0) {
+                         $mobileContainer.append('<div class="text-center text-muted font-italic py-4 mobile-empty-msg">Tidak ada data.</div>');
+                    } else { $emptyMobile.show(); }
+                } else { $emptyMobile.hide(); }
             }
-        } else {
-            // Jika ada mahasiswa, sembunyikan pesan kosong
-            if ($emptyMsgRow.length > 0) {
-                $emptyMsgRow.hide();
-            }
-        }
+        });
     });
-
-});
-
-$(document).on('click', '.btn-filter', function() {
-    var $btn = $(this);
-    var filterType = $btn.data('filter'); // 'all', 'ongoing', 'selesai'
-    
-    // 1. Ubah Tampilan Tombol
-    $btn.siblings().removeClass('btn-primary').addClass('btn-secondary');
-    $btn.removeClass('btn-secondary').addClass('btn-primary');
-
-    // 2. Cari Container Tabel & Mobile
-    // Mencari baris row tabel yang terletak setelah row tombol filter
-    var $dashboardRow = $btn.closest('.row').next('.row'); 
-    var $tbody = $dashboardRow.find('table tbody');
-    var $rows = $tbody.find('tr[data-status]'); // Hanya baris data (bukan baris pesan kosong)
-
-    // 3. Filter Baris Tabel (Desktop)
-    if (filterType === 'all') {
-        $rows.show();
-    } else {
-        $rows.hide();
-        $rows.filter('[data-status="' + filterType + '"]').show();
-    }
-
-    // --- LOGIKA PESAN "TIDAK ADA DATA" (DESKTOP) ---
-    var visibleCount = $rows.filter(':visible').length;
-    var $emptyRow = $tbody.find('.dosen-empty-msg'); // Cari baris pesan kosong
-
-    if (visibleCount === 0) {
-        if ($emptyRow.length === 0) {
-            // Buat baris pesan jika belum ada
-            var msg = '<tr class="dosen-empty-msg"><td colspan="5" class="text-center text-muted font-italic py-4">Tidak ada mahasiswa bimbingan dengan status ini.</td></tr>';
-            $tbody.append(msg);
-        } else {
-            $emptyRow.show();
-        }
-    } else {
-        // Sembunyikan pesan jika data ada
-        if ($emptyRow.length > 0) {
-            $emptyRow.hide();
-        }
-    }
-
-    // 4. Filter Mobile (Optional - Jika Anda menggunakan view mobile)
-    var $mobileContainer = $dashboardRow.find('.d-md-none');
-    var $mobileCards = $mobileContainer.children('div[data-status]'); // Div pembungkus yg kita buat tadi
-
-    if ($mobileCards.length > 0) {
-        if (filterType === 'all') {
-            $mobileCards.show();
-        } else {
-            $mobileCards.hide();
-            $mobileCards.filter('[data-status="' + filterType + '"]').show();
-        }
-
-        // Logika Pesan Kosong Mobile
-        var visibleMobile = $mobileCards.filter(':visible').length;
-        var $emptyMobile = $mobileContainer.find('.mobile-empty-msg');
-
-        if (visibleMobile === 0) {
-            if ($emptyMobile.length === 0) {
-                $mobileContainer.append('<div class="text-center text-muted font-italic py-4 mobile-empty-msg">Tidak ada data.</div>');
-            } else {
-                $emptyMobile.show();
-            }
-        } else {
-            $emptyMobile.hide();
-        }
-    }
-});
-
 </script>
 @stop
 
@@ -320,6 +207,7 @@ $(document).on('click', '.btn-filter', function() {
 
 @section('content')
 
+{{-- 1. INFO BOX SURAT --}}
 @if(array_intersect(['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat', 'kaprodi', 'sekprodi', 'admin_prodi'], $userRole))
     <h3>TTD Kaprodi</h3>
     <div class="info_box">
@@ -339,10 +227,9 @@ $(document).on('click', '.btn-filter', function() {
     <hr>
 @endif
 
+{{-- 2. DEKANAT DASHBOARD --}}
 @if(array_intersect(['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'], $userRole))
-    <x-dekanat-dashboard 
-        :monitoringDekanat="$monitoringDekanat"
-    />
+    <x-dekanat-dashboard :monitoringDekanat="$monitoringDekanat" />
 @endif
 
 @if(array_intersect(['kaprodi', 'sekprodi', 'admin_prodi'], $userRole))
@@ -355,19 +242,26 @@ $(document).on('click', '.btn-filter', function() {
     />
 @endif
 
+{{-- 4. DOSEN DASHBOARD --}}
 @if(in_array('dosen', $userRole))
+    {{-- Kita harus kirim variabel yang berisi status yang benar ke component --}}
+    {{-- Karena component x-dosen-dashboard menerima $bimbingan apa adanya, --}}
+    {{-- kita perlu memodifikasi collection $bimbingan di sini sebelum dikirim (opsional) --}}
+    {{-- atau biarkan logic status di dalam component/view child seperti di bawah --}}
+
     <x-dosen-dashboard 
         :totalSuratPT="$totalSuratPT" 
         :PTdiproses="$PTdiproses" 
         :PTditerima="$PTditerima"
         :PTditolak="$PTditolak" 
-        :bimbingan="$bimbingan"
+        :bimbingan="$bimbingan" 
         :totalBimbingan="$totalBimbingan"
         :bimbinganOngoing="$bimbinganOngoing"
         :bimbinganSelesai="$bimbinganSelesai" 
     />
 @endif
 
+{{-- 5. MAHASISWA DASHBOARD --}}
 @if(in_array('mahasiswa', $userRole))
     <h3>Statistik Surat Anda</h3>
     <div class="info_box">
