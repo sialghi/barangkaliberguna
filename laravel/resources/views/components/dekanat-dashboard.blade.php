@@ -42,7 +42,7 @@
             <x-slot name="header">
                 <th style="width: 25%">Nama Dosen</th>
                 <th style="width: 25%">Prodi</th>
-                <th style="width: 20%">Mahasiswa</th>
+                <th style="width: 25%">Mahasiswa</th>
                 <th style="width: 15%" class="text-center">On-Going</th>
                 <th style="width: 15%" class="text-center">Finished</th>
             </x-slot>
