@@ -6,98 +6,224 @@ use App\Models\Letter;
 use App\Models\PermohonanTugas;
 use App\Models\User;
 use App\Models\UsersPivot;
-
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
 {
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
     public function __construct()
     {
         $this->middleware(['auth', 'verified', 'email_verified']);
     }
 
-    /**
-     * Show the application dashboard.
-     *
-     * @return \Illuminate\Contracts\Support\Renderable
-     */
     public function index()
     {
-        // test code
-
         $user = Auth::user();
         $userRole = $user->roles->pluck('nama')->toArray();
-        $userPivot = UsersPivot::where('id_user', $user->id)->with('role', 'programStudi', 'fakultas')->orderBy('id_role', 'desc')->get();
+        $userPivot = UsersPivot::where('id_user', $user->id)
+            ->with('role', 'programStudi', 'fakultas')
+            ->orderBy('id_role', 'desc')
+            ->get();
 
-        $data = collect();
+        $compactData = [
+            'userRole' => $userRole,
+            'userPivot' => $userPivot,
+        ];
+
+        $tabelNilai = 'nilai_skripsi'; 
 
         foreach ($userPivot as $pivot) {
-            $role = $pivot->role->nama;
             $programStudi = $pivot->id_program_studi;
             $fakultas = $pivot->id_fakultas;
-            if (array_intersect(['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat',], $userRole)) {
-                $suratTTD = Letter::whereHas('mahasiswa.fakultas', function ($query) use ($fakultas) {
-                    $query->where('fakultas.id', $fakultas); // Adjust based on your column name
-                })->get();
-                $totalSuratTTD = $suratTTD->count();
-                $belumTTD = $suratTTD->where("status", 'Belum di TTD')->count();
-                $sudahTTD = $suratTTD->where("status", 'Sudah di TTD')->count();
-                $ditolakTTD = $suratTTD->where("status", 'Ditolak')->count();
 
-                $suratPT = PermohonanTugas::whereHas('dosen.fakultas', function ($query) use ($fakultas) {
-                    $query->where('fakultas.id', $fakultas); // Adjust based on your column name
-                })->get();
-                $totalSuratPT = $suratPT->count();
-                $PTdiproses = $suratPT->where("status", 'Sedang Diproses')->count();
-                $PTditerima = $suratPT->where("status", 'Diterima')->count();
-                $PTditolak = $suratPT->where("status", 'Ditolak')->count();
+            // --- DEKANAT ---
+            if (array_intersect(['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'], $userRole)) {
+                $suratTTD = Letter::whereHas('mahasiswa.fakultas', function ($q) use ($fakultas) { $q->where('fakultas.id', $fakultas); })->get();
+                $suratPT = PermohonanTugas::whereHas('dosen.fakultas', function ($q) use ($fakultas) { $q->where('fakultas.id', $fakultas); })->get();
+                $statsSurat = $this->getStats($suratTTD, $suratPT);
 
-                return view('home', compact('userRole', 'userPivot', 'totalSuratTTD', 'belumTTD', 'sudahTTD', 'ditolakTTD', 'totalSuratPT', 'PTdiproses', 'PTditerima', 'PTditolak'));
-            } else if (array_intersect(['kaprodi', 'sekprodi', 'admin_prodi'], $userRole)) {
-                $suratTTD = Letter::whereHas('mahasiswa.programStudi', function ($query) use ($programStudi) {
-                    $query->where('program_studi.id', $programStudi); // Adjust based on your column name
-                })->get();
-                $totalSuratTTD = $suratTTD->count();
-                $belumTTD = $suratTTD->where("status", 'Belum di TTD')->count();
-                $sudahTTD = $suratTTD->where("status", 'Sudah di TTD')->count();
-                $ditolakTTD = $suratTTD->where("status", 'Ditolak')->count();
+                $prodiFakultas = \App\Models\ProgramStudi::where('id_fakultas', $fakultas)->get();
+                $chartLabels = []; $chartData = [];
+                foreach ($prodiFakultas as $p) {
+                    $count = DB::table('bimbingan_skripsi')
+                        ->join('users_pivot', 'bimbingan_skripsi.id_mahasiswa', '=', 'users_pivot.id_user')
+                        ->where('users_pivot.id_program_studi', $p->id)
+                        ->distinct('bimbingan_skripsi.id_mahasiswa')
+                        ->count();
+                    $chartLabels[] = $p->nama; $chartData[] = $count;
+                }
 
-                $SuratPT = PermohonanTugas::whereHas('dosen.programStudi', function ($query) use ($programStudi) {
-                    $query->where('program_studi.id', $programStudi); // Adjust based on your column name
-                })->get();
-                $totalSuratPT = $SuratPT->count();
-                $PTdiproses = $SuratPT->where("status", 'Sedang Diproses')->count();
-                $PTditerima = $SuratPT->where("status", 'Diterima')->count();
-                $PTditolak = $SuratPT->where("status", 'Ditolak')->count();
+                $allDosenFakultas = User::whereHas('pivot', function($q) use ($fakultas) {
+                    $q->where('id_fakultas', $fakultas)->whereHas('role', function($rq) { $rq->where('nama', 'dosen'); });
+                })->with('pivot.programStudi')->get();
+                $idDosenArray = $allDosenFakultas->pluck('id')->toArray();
 
-                return view('home', compact('userRole', 'userPivot', 'totalSuratTTD', 'belumTTD', 'sudahTTD', 'ditolakTTD', 'totalSuratPT', 'PTdiproses', 'PTditerima', 'PTditolak'));
-            } else if (in_array('dosen', $userRole)) {
+                $bimbinganRecords = DB::table('bimbingan_skripsi')
+                    ->join('users as mhs', 'bimbingan_skripsi.id_mahasiswa', '=', 'mhs.id')
+                    ->leftJoin($tabelNilai, 'bimbingan_skripsi.id_mahasiswa', '=', "$tabelNilai.id_mahasiswa")
+                    ->whereIn('bimbingan_skripsi.id_pembimbing', $idDosenArray)
+                    ->select(
+                        'bimbingan_skripsi.*', 'mhs.name', 'mhs.nim_nip_nidn',
+                        DB::raw("CASE WHEN 
+                            $tabelNilai.nilai_pembimbing_1 IS NOT NULL AND 
+                            $tabelNilai.nilai_pembimbing_2 IS NOT NULL AND 
+                            $tabelNilai.nilai_penguji_1 IS NOT NULL AND 
+                            $tabelNilai.nilai_penguji_2 IS NOT NULL 
+                            THEN 1 ELSE 0 END as is_finished")
+                    )
+                    ->whereIn('bimbingan_skripsi.id', function($query) use ($idDosenArray) {
+                        $query->selectRaw('MAX(id)')->from('bimbingan_skripsi')
+                            ->whereIn('id_pembimbing', $idDosenArray)
+                            ->groupBy('id_mahasiswa', 'id_pembimbing');
+                    })->get();
+
+                $monitoringDekanat = $allDosenFakultas->map(function($dosen) use ($bimbinganRecords) {
+                    $mhs = $bimbinganRecords->where('id_pembimbing', $dosen->id);
+                    return (object)[
+                        'id' => $dosen->id,
+                        'nama' => $dosen->name,
+                        'prodi' => $dosen->pivot->first()->programStudi->nama ?? '-',
+                        'total_mhs' => $mhs->count(),
+                        'ongoing' => $mhs->where('is_finished', 0)->count(),
+                        'finished' => $mhs->where('is_finished', 1)->count(),
+                        'students' => $mhs
+                    ];
+                });
+
+                $compactData = array_merge($compactData, $statsSurat, [
+                    'chartLabels' => $chartLabels, 'chartData' => $chartData, 'monitoringDekanat' => $monitoringDekanat
+                ]);
+                return view('home', $compactData);
+            }
+            
+            // --- KAPRODI / PRODI ---
+            else if (array_intersect(['kaprodi', 'sekprodi', 'admin_prodi'], $userRole)) {
+                $suratTTD = Letter::whereHas('mahasiswa.programStudi', function ($q) use ($programStudi) { $q->where('program_studi.id', $programStudi); })->get();
+                $suratPT = PermohonanTugas::whereHas('dosen.programStudi', function ($q) use ($programStudi) { $q->where('program_studi.id', $programStudi); })->get();
+                $statsSurat = $this->getStats($suratTTD, $suratPT);
+
+                $dosenProdi = User::whereHas('pivot', function($q) use ($programStudi) {
+                    $q->where('id_program_studi', $programStudi)->whereHas('role', function($rq) { $rq->where('nama', 'dosen'); });
+                })->get();
+                $idDosenArray = $dosenProdi->pluck('id')->toArray();
+
+                $allBimbingan = DB::table('bimbingan_skripsi')
+                    ->join('users as mhs', 'bimbingan_skripsi.id_mahasiswa', '=', 'mhs.id')
+                    ->join('users as dsn', 'bimbingan_skripsi.id_pembimbing', '=', 'dsn.id')
+                    ->leftJoin($tabelNilai, 'bimbingan_skripsi.id_mahasiswa', '=', "$tabelNilai.id_mahasiswa")
+                    ->whereIn('bimbingan_skripsi.id_pembimbing', $idDosenArray)
+                    ->select(
+                        'bimbingan_skripsi.*', 'mhs.name as nama_mahasiswa', 'mhs.nim_nip_nidn as nim_mahasiswa',
+                        'dsn.name as nama_dosen', 'dsn.id as id_dosen',
+                        DB::raw("CASE WHEN 
+                            $tabelNilai.nilai_pembimbing_1 IS NOT NULL AND 
+                            $tabelNilai.nilai_pembimbing_2 IS NOT NULL AND 
+                            $tabelNilai.nilai_penguji_1 IS NOT NULL AND 
+                            $tabelNilai.nilai_penguji_2 IS NOT NULL 
+                            THEN 1 ELSE 0 END as is_finished")
+                    )
+                    ->whereIn('bimbingan_skripsi.id', function($query) use ($idDosenArray) {
+                        $query->selectRaw('MAX(id)')->from('bimbingan_skripsi')
+                            ->whereIn('id_pembimbing', $idDosenArray)
+                            ->groupBy('id_mahasiswa', 'id_pembimbing');
+                    })->get();
+
+                $monitoringDosen = $dosenProdi->map(function($dosen) use ($allBimbingan) {
+                    $mhsBimbingan = $allBimbingan->where('id_dosen', $dosen->id);
+                    return (object)[
+                        'id' => $dosen->id,
+                        'nama' => $dosen->name,
+                        'total_mhs' => $mhsBimbingan->count(),
+                        'ongoing' => $mhsBimbingan->where('is_finished', 0)->count(),
+                        'finished' => $mhsBimbingan->where('is_finished', 1)->count(),
+                        'students' => $mhsBimbingan
+                    ];
+                });
+
+                $statsProdi = [
+                    'totalDosen' => $dosenProdi->count(),
+                    'totalMhs' => $allBimbingan->unique('id_mahasiswa')->count(),
+                    'prodiOngoing' => $allBimbingan->where('is_finished', 0)->count(),
+                    'prodiSelesai' => $allBimbingan->where('is_finished', 1)->count(),
+                    'monitoringDosen' => $monitoringDosen
+                ];
+
+                $compactData = array_merge($compactData, $statsSurat, $statsProdi);
+                return view('home', $compactData);
+            }
+            
+            // --- DOSEN ---
+            else if (in_array('dosen', $userRole)) {
                 $suratPT = PermohonanTugas::where("id_user", $user->id)->get();
-                $totalSuratPT = $suratPT->count();
-                $PTdiproses = $suratPT->where("status", "Sedang Diproses")->count();
-                $PTditerima = $suratPT->where("status", "Diterima")->count();
-                $PTditolak = $suratPT->where("status", "Ditolak")->count();
+                $statsSurat = [
+                    'totalSuratPT' => $suratPT->count(),
+                    'PTdiproses' => $suratPT->where("status", "Sedang Diproses")->count(),
+                    'PTditerima' => $suratPT->where("status", "Diterima")->count(),
+                    'PTditolak' => $suratPT->where("status", "Ditolak")->count(),
+                ];
 
-                return view('home', compact('userRole', 'userPivot', 'totalSuratPT', 'PTdiproses', 'PTditerima', 'PTditolak'));
-            } else if (in_array('mahasiswa', $userRole)) {
+                $bimbingan = DB::table('bimbingan_skripsi')
+                    ->join('users', 'bimbingan_skripsi.id_mahasiswa', '=', 'users.id')
+                    ->leftJoin($tabelNilai, 'bimbingan_skripsi.id_mahasiswa', '=', "$tabelNilai.id_mahasiswa")
+                    ->where('bimbingan_skripsi.id_pembimbing', $user->id) 
+                    ->select(
+                        'users.name as nama_mahasiswa', 'users.nim_nip_nidn as nim', 'bimbingan_skripsi.judul_skripsi',
+                        'bimbingan_skripsi.sesi as jumlah_bimbingan',
+                        DB::raw("CASE WHEN 
+                            $tabelNilai.nilai_pembimbing_1 IS NOT NULL AND 
+                            $tabelNilai.nilai_pembimbing_2 IS NOT NULL AND 
+                            $tabelNilai.nilai_penguji_1 IS NOT NULL AND 
+                            $tabelNilai.nilai_penguji_2 IS NOT NULL 
+                            THEN 1 ELSE 0 END as is_finished")
+                    )
+                    ->whereIn('bimbingan_skripsi.id', function($query) use ($user) {
+                        $query->selectRaw('MAX(id)')->from('bimbingan_skripsi')
+                            ->where('id_pembimbing', $user->id)
+                            ->groupBy('id_mahasiswa');
+                    })->get();
+
+                $statsBimbingan = [
+                    'bimbingan' => $bimbingan,
+                    'totalBimbingan' => $bimbingan->count(),
+                    'bimbinganOngoing' => $bimbingan->where('is_finished', 0)->count(),
+                    'bimbinganSelesai' => $bimbingan->where('is_finished', 1)->count(),
+                ];
+
+                $compactData = array_merge($compactData, $statsSurat, $statsBimbingan);
+                return view('home', $compactData);
+            }
+            
+            // --- MAHASISWA ---
+            else if (in_array('mahasiswa', $userRole)) {
                 $suratTTD = Letter::where("id_mahasiswa", $user->id)->get();
-                $totalSuratTTD = $suratTTD->count();
-                $belumTTD = $suratTTD->where("status", 'Belum di TTD')->count();
-                $sudahTTD = $suratTTD->where("status", 'Sudah di TTD')->count();
-                $ditolakTTD = $suratTTD->where("status", 'Ditolak')->count();
-
-                return view('home', compact('userRole', 'userPivot', 'totalSuratTTD', 'belumTTD', 'sudahTTD', 'ditolakTTD'));
+                $compactData = array_merge($compactData, [
+                    'totalSuratTTD' => $suratTTD->count(),
+                    'belumTTD' => $suratTTD->where("status", 'Belum di TTD')->count(),
+                    'sudahTTD' => $suratTTD->where("status", 'Sudah di TTD')->count(),
+                    'ditolakTTD' => $suratTTD->where("status", 'Ditolak')->count(),
+                ]);
+                return view('home', $compactData);
             }
         }
+        return view('home', $compactData);
+    }
 
-        return view('home', compact('userRole', 'userPivot'));
+    /**
+     * Helper untuk merangkum statistik surat (Dekan & Prodi)
+     */
+    private function getStats($suratTTD, $suratPT)
+    {
+        return [
+            'totalSuratTTD' => $suratTTD->count(),
+            'belumTTD'      => $suratTTD->where("status", 'Belum di TTD')->count(),
+            'sudahTTD'      => $suratTTD->where("status", 'Sudah di TTD')->count(),
+            'ditolakTTD'    => $suratTTD->where("status", 'Ditolak')->count(),
+            'totalSuratPT'  => $suratPT->count(),
+            'PTdiproses'    => $suratPT->where("status", 'Sedang Diproses')->count(),
+            'PTditerima'    => $suratPT->where("status", 'Diterima')->count(),
+            'PTditolak'     => $suratPT->where("status", 'Ditolak')->count(),
+        ];
     }
 
     public function showMahasiswa($id)
@@ -107,16 +233,15 @@ class HomeController extends Controller
         $userRole = $authUser->roles->pluck('nama')->toArray();
 
         $response = [
-            'name' => $user->name,
+            'name'         => $user->name,
             'nim_nip_nidn' => $user->nim_nip_nidn,
-            'email' => $user->email,
-            'no_hp' => $user->no_hp,
+            'email'        => $user->email,
+            'no_hp'        => $user->no_hp,
         ];
 
-        // Only include 'ttd' if the authenticated user is dekanat or prodi
-        if (array_intersect(['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat', 'kaprodi', 'sekprodi', 'admin_prodi'], $userRole)) {
+        if (array_intersect(['dekan', 'kaprodi', 'admin_prodi', 'admin_dekanat'], $userRole)) {
             $response['role'] = $user->role;
-            $response['ttd'] = $user->ttd;
+            $response['ttd']  = $user->ttd;
         }
 
         return response()->json($response);
