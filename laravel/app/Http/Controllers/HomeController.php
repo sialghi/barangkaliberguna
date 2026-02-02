@@ -24,8 +24,28 @@ class HomeController extends Controller
 
     public function index()
     {
+        // Tentukan bobot prioritas (semakin kecil semakin tinggi jabatannya)
+        $priority = [
+            'dekan' => 1,
+            'wadek_satu' => 1,
+            'wadek_dua' => 1,
+            'wadek_tiga' => 1,
+            'admin_dekanat' => 1,
+            'kaprodi' => 2,
+            'sekprodi' => 2,
+            'admin_prodi' => 2,
+            'dosen' => 3,
+            'mahasiswa' => 4
+        ];
+
+
+
         $user = Auth::user();
         $userRole = $user->roles->pluck('nama')->toArray();
+
+        usort($userRole, function ($a, $b) use ($priority) {
+            return ($priority[$a] ?? 99) <=> ($priority[$b] ?? 99);
+        });
         $userPivot = UsersPivot::where('id_user', $user->id)
             ->with('role', 'programStudi', 'fakultas')
             ->orderBy('id_role', 'desc')

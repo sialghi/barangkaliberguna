@@ -147,7 +147,7 @@
                     if ($emptyMsgRow.length === 0) {
                         $tbody.append(
                             '<tr class="dynamic-empty-msg"><td colspan="5" class="text-center text-muted font-italic py-3">Tidak ada mahasiswa bimbingan dengan status ini.</td></tr>'
-                            );
+                        );
                     } else {
                         $emptyMsgRow.show();
                     }
@@ -184,7 +184,7 @@
                     if ($emptyRow.length === 0) {
                         $tbody.append(
                             '<tr class="dosen-empty-msg"><td colspan="5" class="text-center text-muted font-italic py-4">Tidak ada mahasiswa bimbingan dengan status ini.</td></tr>'
-                            );
+                        );
                     } else {
                         $emptyRow.show();
                     }
@@ -211,7 +211,7 @@
                         if ($emptyMobile.length === 0) {
                             $mobileContainer.append(
                                 '<div class="text-center text-muted font-italic py-4 mobile-empty-msg">Tidak ada data.</div>'
-                                );
+                            );
                         } else {
                             $emptyMobile.show();
                         }
@@ -289,14 +289,12 @@
     {{-- 2. DEKANAT DASHBOARD --}}
     @if (array_intersect(['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'], $userRole))
         <x-dekanat-dashboard :monitoringDekanat="$monitoringDekanat" />
-    @endif
-
-    @if (array_intersect(['kaprodi', 'sekprodi', 'admin_prodi'], $userRole))
+    @elseif (array_intersect(['kaprodi', 'sekprodi', 'admin_prodi'], $userRole))
         <x-kaprodi-dashboard :totalDosen="$totalDosen" :totalMhs="$totalMhs" :prodiOngoing="$prodiOngoing" :prodiSelesai="$prodiSelesai" :monitoringDosen="$monitoringDosen" />
-    @endif
 
-    {{-- 4. DOSEN DASHBOARD --}}
-    @if (in_array('dosen', $userRole))
+
+        {{-- 4. DOSEN DASHBOARD --}}
+    @elseif (in_array('dosen', $userRole))
         {{-- Kita harus kirim variabel yang berisi status yang benar ke component --}}
         {{-- Karena component x-dosen-dashboard menerima $bimbingan apa adanya, --}}
         {{-- kita perlu memodifikasi collection $bimbingan di sini sebelum dikirim (opsional) --}}
@@ -304,10 +302,10 @@
 
         <x-dosen-dashboard :totalSuratPT="$totalSuratPT" :PTdiproses="$PTdiproses" :PTditerima="$PTditerima" :PTditolak="$PTditolak" :bimbingan="$bimbingan"
             :totalBimbingan="$totalBimbingan" :bimbinganOngoing="$bimbinganOngoing" :bimbinganSelesai="$bimbinganSelesai" />
-    @endif
 
-    {{-- 5. MAHASISWA DASHBOARD --}}
-    @if (in_array('mahasiswa', $userRole))
+
+        {{-- 5. MAHASISWA DASHBOARD --}}
+    @elseif (in_array('mahasiswa', $userRole))
         <h3>Statistik Surat Anda</h3>
         <div class="info_box">
             <x-adminlte-info-box class="mr-3" theme="primary" text="{{ $totalSuratTTD }}" title="Total Surat"
