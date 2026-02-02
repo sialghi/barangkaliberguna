@@ -6,6 +6,11 @@ use App\Models\Letter;
 use App\Models\PermohonanTugas;
 use App\Models\User;
 use App\Models\UsersPivot;
+use App\Models\PendaftaranSemhas;
+use App\Models\PendaftaranSempro;
+use App\Models\PendaftaranSkripsi;
+
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +36,7 @@ class HomeController extends Controller
             'userPivot' => $userPivot,
         ];
 
-        $tabelNilai = 'nilai_skripsi'; 
+        $tabelNilai = 'nilai_skripsi';
 
         foreach ($userPivot as $pivot) {
             $programStudi = $pivot->id_program_studi;
@@ -39,23 +44,31 @@ class HomeController extends Controller
 
             // --- DEKANAT ---
             if (array_intersect(['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'], $userRole)) {
-                $suratTTD = Letter::whereHas('mahasiswa.fakultas', function ($q) use ($fakultas) { $q->where('fakultas.id', $fakultas); })->get();
-                $suratPT = PermohonanTugas::whereHas('dosen.fakultas', function ($q) use ($fakultas) { $q->where('fakultas.id', $fakultas); })->get();
+                $suratTTD = Letter::whereHas('mahasiswa.fakultas', function ($q) use ($fakultas) {
+                    $q->where('fakultas.id', $fakultas);
+                })->get();
+                $suratPT = PermohonanTugas::whereHas('dosen.fakultas', function ($q) use ($fakultas) {
+                    $q->where('fakultas.id', $fakultas);
+                })->get();
                 $statsSurat = $this->getStats($suratTTD, $suratPT);
 
                 $prodiFakultas = \App\Models\ProgramStudi::where('id_fakultas', $fakultas)->get();
-                $chartLabels = []; $chartData = [];
+                $chartLabels = [];
+                $chartData = [];
                 foreach ($prodiFakultas as $p) {
                     $count = DB::table('bimbingan_skripsi')
                         ->join('users_pivot', 'bimbingan_skripsi.id_mahasiswa', '=', 'users_pivot.id_user')
                         ->where('users_pivot.id_program_studi', $p->id)
                         ->distinct('bimbingan_skripsi.id_mahasiswa')
                         ->count();
-                    $chartLabels[] = $p->nama; $chartData[] = $count;
+                    $chartLabels[] = $p->nama;
+                    $chartData[] = $count;
                 }
 
-                $allDosenFakultas = User::whereHas('pivot', function($q) use ($fakultas) {
-                    $q->where('id_fakultas', $fakultas)->whereHas('role', function($rq) { $rq->where('nama', 'dosen'); });
+                $allDosenFakultas = User::whereHas('pivot', function ($q) use ($fakultas) {
+                    $q->where('id_fakultas', $fakultas)->whereHas('role', function ($rq) {
+                        $rq->where('nama', 'dosen');
+                    });
                 })->with('pivot.programStudi')->get();
                 $idDosenArray = $allDosenFakultas->pluck('id')->toArray();
 
@@ -64,7 +77,9 @@ class HomeController extends Controller
                     ->leftJoin($tabelNilai, 'bimbingan_skripsi.id_mahasiswa', '=', "$tabelNilai.id_mahasiswa")
                     ->whereIn('bimbingan_skripsi.id_pembimbing', $idDosenArray)
                     ->select(
-                        'bimbingan_skripsi.*', 'mhs.name', 'mhs.nim_nip_nidn',
+                        'bimbingan_skripsi.*',
+                        'mhs.name',
+                        'mhs.nim_nip_nidn',
                         DB::raw("CASE WHEN 
                             $tabelNilai.nilai_pembimbing_1 IS NOT NULL AND 
                             $tabelNilai.nilai_pembimbing_2 IS NOT NULL AND 
@@ -72,13 +87,13 @@ class HomeController extends Controller
                             $tabelNilai.nilai_penguji_2 IS NOT NULL 
                             THEN 1 ELSE 0 END as is_finished")
                     )
-                    ->whereIn('bimbingan_skripsi.id', function($query) use ($idDosenArray) {
+                    ->whereIn('bimbingan_skripsi.id', function ($query) use ($idDosenArray) {
                         $query->selectRaw('MAX(id)')->from('bimbingan_skripsi')
                             ->whereIn('id_pembimbing', $idDosenArray)
                             ->groupBy('id_mahasiswa', 'id_pembimbing');
                     })->get();
 
-                $monitoringDekanat = $allDosenFakultas->map(function($dosen) use ($bimbinganRecords) {
+                $monitoringDekanat = $allDosenFakultas->map(function ($dosen) use ($bimbinganRecords) {
                     $mhs = $bimbinganRecords->where('id_pembimbing', $dosen->id);
                     return (object)[
                         'id' => $dosen->id,
@@ -92,19 +107,27 @@ class HomeController extends Controller
                 });
 
                 $compactData = array_merge($compactData, $statsSurat, [
-                    'chartLabels' => $chartLabels, 'chartData' => $chartData, 'monitoringDekanat' => $monitoringDekanat
+                    'chartLabels' => $chartLabels,
+                    'chartData' => $chartData,
+                    'monitoringDekanat' => $monitoringDekanat
                 ]);
                 return view('home', $compactData);
             }
-            
+
             // --- KAPRODI / PRODI ---
             else if (array_intersect(['kaprodi', 'sekprodi', 'admin_prodi'], $userRole)) {
-                $suratTTD = Letter::whereHas('mahasiswa.programStudi', function ($q) use ($programStudi) { $q->where('program_studi.id', $programStudi); })->get();
-                $suratPT = PermohonanTugas::whereHas('dosen.programStudi', function ($q) use ($programStudi) { $q->where('program_studi.id', $programStudi); })->get();
+                $suratTTD = Letter::whereHas('mahasiswa.programStudi', function ($q) use ($programStudi) {
+                    $q->where('program_studi.id', $programStudi);
+                })->get();
+                $suratPT = PermohonanTugas::whereHas('dosen.programStudi', function ($q) use ($programStudi) {
+                    $q->where('program_studi.id', $programStudi);
+                })->get();
                 $statsSurat = $this->getStats($suratTTD, $suratPT);
 
-                $dosenProdi = User::whereHas('pivot', function($q) use ($programStudi) {
-                    $q->where('id_program_studi', $programStudi)->whereHas('role', function($rq) { $rq->where('nama', 'dosen'); });
+                $dosenProdi = User::whereHas('pivot', function ($q) use ($programStudi) {
+                    $q->where('id_program_studi', $programStudi)->whereHas('role', function ($rq) {
+                        $rq->where('nama', 'dosen');
+                    });
                 })->get();
                 $idDosenArray = $dosenProdi->pluck('id')->toArray();
 
@@ -114,8 +137,11 @@ class HomeController extends Controller
                     ->leftJoin($tabelNilai, 'bimbingan_skripsi.id_mahasiswa', '=', "$tabelNilai.id_mahasiswa")
                     ->whereIn('bimbingan_skripsi.id_pembimbing', $idDosenArray)
                     ->select(
-                        'bimbingan_skripsi.*', 'mhs.name as nama_mahasiswa', 'mhs.nim_nip_nidn as nim_mahasiswa',
-                        'dsn.name as nama_dosen', 'dsn.id as id_dosen',
+                        'bimbingan_skripsi.*',
+                        'mhs.name as nama_mahasiswa',
+                        'mhs.nim_nip_nidn as nim_mahasiswa',
+                        'dsn.name as nama_dosen',
+                        'dsn.id as id_dosen',
                         DB::raw("CASE WHEN 
                             $tabelNilai.nilai_pembimbing_1 IS NOT NULL AND 
                             $tabelNilai.nilai_pembimbing_2 IS NOT NULL AND 
@@ -123,13 +149,13 @@ class HomeController extends Controller
                             $tabelNilai.nilai_penguji_2 IS NOT NULL 
                             THEN 1 ELSE 0 END as is_finished")
                     )
-                    ->whereIn('bimbingan_skripsi.id', function($query) use ($idDosenArray) {
+                    ->whereIn('bimbingan_skripsi.id', function ($query) use ($idDosenArray) {
                         $query->selectRaw('MAX(id)')->from('bimbingan_skripsi')
                             ->whereIn('id_pembimbing', $idDosenArray)
                             ->groupBy('id_mahasiswa', 'id_pembimbing');
                     })->get();
 
-                $monitoringDosen = $dosenProdi->map(function($dosen) use ($allBimbingan) {
+                $monitoringDosen = $dosenProdi->map(function ($dosen) use ($allBimbingan) {
                     $mhsBimbingan = $allBimbingan->where('id_dosen', $dosen->id);
                     return (object)[
                         'id' => $dosen->id,
@@ -152,7 +178,7 @@ class HomeController extends Controller
                 $compactData = array_merge($compactData, $statsSurat, $statsProdi);
                 return view('home', $compactData);
             }
-            
+
             // --- DOSEN ---
             else if (in_array('dosen', $userRole)) {
                 $suratPT = PermohonanTugas::where("id_user", $user->id)->get();
@@ -166,9 +192,11 @@ class HomeController extends Controller
                 $bimbingan = DB::table('bimbingan_skripsi')
                     ->join('users', 'bimbingan_skripsi.id_mahasiswa', '=', 'users.id')
                     ->leftJoin($tabelNilai, 'bimbingan_skripsi.id_mahasiswa', '=', "$tabelNilai.id_mahasiswa")
-                    ->where('bimbingan_skripsi.id_pembimbing', $user->id) 
+                    ->where('bimbingan_skripsi.id_pembimbing', $user->id)
                     ->select(
-                        'users.name as nama_mahasiswa', 'users.nim_nip_nidn as nim', 'bimbingan_skripsi.judul_skripsi',
+                        'users.name as nama_mahasiswa',
+                        'users.nim_nip_nidn as nim',
+                        'bimbingan_skripsi.judul_skripsi',
                         'bimbingan_skripsi.sesi as jumlah_bimbingan',
                         DB::raw("CASE WHEN 
                             $tabelNilai.nilai_pembimbing_1 IS NOT NULL AND 
@@ -177,7 +205,7 @@ class HomeController extends Controller
                             $tabelNilai.nilai_penguji_2 IS NOT NULL 
                             THEN 1 ELSE 0 END as is_finished")
                     )
-                    ->whereIn('bimbingan_skripsi.id', function($query) use ($user) {
+                    ->whereIn('bimbingan_skripsi.id', function ($query) use ($user) {
                         $query->selectRaw('MAX(id)')->from('bimbingan_skripsi')
                             ->where('id_pembimbing', $user->id)
                             ->groupBy('id_mahasiswa');
@@ -193,7 +221,7 @@ class HomeController extends Controller
                 $compactData = array_merge($compactData, $statsSurat, $statsBimbingan);
                 return view('home', $compactData);
             }
-            
+
             // --- MAHASISWA ---
             else if (in_array('mahasiswa', $userRole)) {
                 $suratTTD = Letter::where("id_mahasiswa", $user->id)->get();
@@ -203,6 +231,43 @@ class HomeController extends Controller
                     'sudahTTD' => $suratTTD->where("status", 'Sudah di TTD')->count(),
                     'ditolakTTD' => $suratTTD->where("status", 'Ditolak')->count(),
                 ]);
+
+                // Perhitungan Deadline Tugas Akhir
+                //  Deadline SEMPRO  //
+                $dataSempro = PendaftaranSempro::where('id_mahasiswa', $user->id)->where('status', 'diterima')->with('periodeSempro')->first();
+                // 2. Hitung Deadline di Controller
+                $deadlineSempro = null;
+
+                if ($dataSempro) {
+                    // Ambil tanggal periode
+                    $rawDate = $dataSempro->periodeSempro->tanggal ?? $dataSempro->periodeSempro->updated_at;
+                    $tanggalSempro = Carbon::parse($rawDate);
+
+                    // Tambah 365 hari (1 tahun)
+                    $deadlineSempro = $tanggalSempro->addDays(365);
+                }
+
+                //  Deadline SEMHAS  //
+                $dataSemhas = PendaftaranSemhas::where('id_mahasiswa', $user->id)->first();
+
+                $deadlineSemhas = null;
+
+                if ($dataSemhas && $dataSemhas->waktu_seminar) {
+
+                    $tglSemhas = \Carbon\Carbon::parse($dataSemhas->waktu_seminar);
+                    $deadlineSemhas = $tglSemhas->addDays(90);
+                }
+                $dataSidang = PendaftaranSkripsi::where('id_mahasiswa', $user->id)->first();
+
+                // MASUKKAN SEMUA KE COMPACT DATA AGAR RAPI
+                $compactData = array_merge($compactData, [
+                    'dataSempro' => $dataSempro,
+                    'deadlineSempro' => $deadlineSempro,
+                    'dataSemhas' => $dataSemhas,
+                    'deadlineSemhas' => $deadlineSemhas,
+                    'dataSidang' => $dataSidang
+                ]);
+
                 return view('home', $compactData);
             }
         }
