@@ -37,27 +37,66 @@
                 }
             @endif
 
-            // --- 2. LOGIKA FILTER PRODI (GLOBAL) ---
-            $('#prodiFilterDekanat').on('change', function() {
+            $('#prodiFilterDekanat').on('change', function () {
                 var selectedProdi = $(this).val();
+                
+                // Desktop Container
                 var $tbody = $('#dekanat-dosen-accordion');
-                var $lecturerRows = $tbody.find('tr[data-prodi]');
+                var $lecturerRows = $tbody.find('tr[data-prodi]'); // Hanya baris dosen
+                var $emptyMsg = $('#emptyProdiMsg');
 
+                // Mobile Container
+                var $mobileContainer = $('#mobile-dekanat-dosen-accordion');
+                var $mobileCards = $mobileContainer.find('[data-prodi]'); // Card dosen mobile
+                var $emptyMsgMobile = $('#emptyProdiMsgMobile');
+
+                // --- LOGIC DESKTOP ---
                 $lecturerRows.each(function() {
                     var $thisDosenRow = $(this);
                     var $detailRow = $thisDosenRow.next('tr');
-
+                    
                     if (selectedProdi === 'all' || $thisDosenRow.data('prodi') === selectedProdi) {
                         $thisDosenRow.show();
-                        $detailRow.css('display', '');
+                        $detailRow.css('display', ''); // Reset display
                     } else {
                         $thisDosenRow.hide();
                         $detailRow.hide();
                     }
                 });
 
-                var count = $lecturerRows.filter(':visible').length;
-                $('#totalDosenText').text('Total: ' + count + ' Dosen');
+                // Cek apakah ada dosen yang visible di desktop
+                var visibleCount = $lecturerRows.filter(':visible').length;
+                if (visibleCount === 0 && selectedProdi !== 'all') {
+                    $emptyMsg.show();
+                } else {
+                    $emptyMsg.hide();
+                }
+                
+                // Update text total dosen
+                if (selectedProdi === 'all') {
+                    $('#totalDosenText').text('Total: ' + $lecturerRows.length + ' Dosen');
+                } else {
+                    $('#totalDosenText').text('Total: ' + visibleCount + ' Dosen (' + selectedProdi + ')');
+                }
+
+                // --- LOGIC MOBILE ---
+                if ($mobileCards.length > 0) {
+                    $mobileCards.each(function() {
+                        var $card = $(this);
+                        if (selectedProdi === 'all' || $card.data('prodi') === selectedProdi) {
+                            $card.show();
+                        } else {
+                            $card.hide();
+                        }
+                    });
+
+                    var visibleMobileCount = $mobileCards.filter(':visible').length;
+                    if (visibleMobileCount === 0 && selectedProdi !== 'all') {
+                        $emptyMsgMobile.show();
+                    } else {
+                        $emptyMsgMobile.hide();
+                    }
+                }
             });
 
             // --- 3. CHART DEKANAT ---

@@ -1,4 +1,5 @@
 @props(['monitoringDekanat'])
+@inject('programStudi', 'App\Models\ProgramStudi')
 
 {{-- 1. CHART STATISTIK --}}
 <div class="row mt-4">
@@ -26,9 +27,11 @@
     <div class="col-md-3">
         <div class="form-group">
             <select class="form-control" id="prodiFilterDekanat">
-                <option value="all">Semua Jurusan</option>
-                @foreach($monitoringDekanat->pluck('prodi')->unique() as $prodiName)
-                    <option value="{{ $prodiName }}">{{ $prodiName }}</option>
+                <option value="all">Semua Prodi</option>
+                {{-- Ambil semua prodi dari database, filter fakultas bisa diatur jika perlu --}}
+                {{-- Asumsi: Kita ambil semua prodi yang ada di tabel --}}
+                @foreach($programStudi::all() as $prodi)
+                    <option value="{{ $prodi->nama }}">{{ $prodi->nama }}</option>
                 @endforeach
             </select>
         </div>
@@ -48,9 +51,14 @@
             </x-slot>
 
             <tbody id="dekanat-dosen-accordion">
+                {{-- Baris Pesan Kosong (Hidden by Default) --}}
+                <tr id="emptyProdiMsg" style="display: none;">
+                    <td colspan="5" class="text-center text-muted font-italic py-4">
+                        Tidak ada dosen terdaftar di prodi ini.
+                    </td>
+                </tr>
+
                 @foreach($monitoringDekanat as $dsn)
-                    {{-- Component Child (Dosen Row) --}}
-                    {{-- Tombol filter lokal sudah ada di dalam component ini --}}
                     <x-dosen-row 
                         :id="'dek-dsn-' . $dsn->id" 
                         :name="$dsn->nama" 
@@ -64,12 +72,9 @@
                         @if($dsn->students->count() > 0)
                             @foreach($dsn->students as $mhs)
                                 @php 
-                                    // LOGIKA BARU: Cek flag is_finished dari controller
                                     $isSelesai = $mhs->is_finished == 1;
                                     $statusSlug = $isSelesai ? 'selesai' : 'ongoing';
                                 @endphp
-                                
-                                {{-- Mengirim data-status agar filter JS bekerja --}}
                                 <x-student-row 
                                     :name="$mhs->name" 
                                     :nim="$mhs->nim_nip_nidn" 
@@ -80,7 +85,6 @@
                                 />
                             @endforeach
                         @else
-                            {{-- Pesan Kosong --}}
                             <tr>
                                 <td colspan="5" class="text-center text-muted italic">Tidak ada data bimbingan.</td>
                             </tr>
@@ -96,7 +100,13 @@
             </x-slot>
 
             <x-slot name="mobile">
+                {{-- MOBILE VIEW --}}
                 <div class="d-block d-md-none pb-3" id="mobile-dekanat-dosen-accordion">
+                    {{-- Pesan Kosong Mobile --}}
+                    <div id="emptyProdiMsgMobile" class="text-center text-muted font-italic py-4" style="display: none;">
+                        Tidak ada dosen terdaftar di prodi ini.
+                    </div>
+
                     @foreach($monitoringDekanat as $dsn)
                         <x-dosen-mobile-card 
                             :id="'dek-mob-' . $dsn->id" 
@@ -113,8 +123,6 @@
                                     $isSelesai = $mhs->is_finished == 1;
                                     $statusSlug = $isSelesai ? 'selesai' : 'ongoing';
                                 @endphp
-                                
-                                {{-- Card Mobile dengan Status yang Benar --}}
                                 <x-student-card 
                                     :name="$mhs->name" 
                                     :nim="$mhs->nim_nip_nidn" 
