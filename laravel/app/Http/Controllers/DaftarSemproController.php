@@ -30,142 +30,121 @@ class DaftarSemproController extends Controller
     {
         $user = Auth::user();
         $userRole = $user->roles->pluck('nama')->toArray();
-        $userPivot = UsersPivot::where('id_user', $user->id)->with('role', 'programStudi', 'fakultas')->orderBy('id_role', 'desc')->get();
+        // Optimasi 1: Eager load pivot, role, prodi, dan fakultas user yang login
+        $userPivot = UsersPivot::where('id_user', $user->id)
+            ->with(['role', 'programStudi', 'fakultas.programStudi'])
+            ->orderBy('id_role', 'desc')
+            ->get();
 
         $namaDosen = collect();
-        $data = collect(); // Initialize the main collection
-        $waktuSempro = collect(); // Initialize waktuSempro collection
+        $data = collect();
+        $waktuSempro = collect();
 
-        $hasRevise = ''; // Initialize hasRevise as empty
-        $reviseCount = 0; // Initialize reviseCount
+        $hasRevise = '';
+        $reviseCount = 0;
+
+        // Optimasi 2: Eager load semua relasi yang dipanggil di dalam tabel (View)
+        $pendaftaranRelations = [
+            'mahasiswa.programStudi',
+            'mahasiswa.fakultas',
+            'kategoriTa',
+            'calonDospem1', // Sesuaikan dengan nama fungsi relasi di model Anda
+            'calonDospem2'
+        ];
 
         foreach ($userPivot as $pivot) {
             $role = $pivot->role->nama;
             $programStudiId = $pivot->id_program_studi;
             $fakultasId = $pivot->id_fakultas;
 
-            // If user has the role of Dekan, Wadek_Satu, Wadek_Dua, Wadek_Tiga, or Admin_Dekanat
+            $query = PendaftaranSempro::with($pendaftaranRelations);
+
             if (in_array($role, ['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'])) {
-                $daftarSempro = PendaftaranSempro::whereHas('mahasiswa.fakultas', function ($query) use ($fakultasId) {
-                    $query->where('fakultas.id', $fakultasId); // Adjust based on your column name
-                })->get()->reject(function ($item) {
-                    return is_null($item->mahasiswa); // Remove items where mahasiswa is null
-                });
-                $daftarSempro->each(function ($item) {
-                    $item->role = 'admin';
-                });
+                $daftarSempro = $query->whereHas('mahasiswa.fakultas', function ($q) use ($fakultasId) {
+                    $q->where('fakultas.id', $fakultasId);
+                })->get();
+                $currentRole = 'admin';
 
-                // Calculate revisi count
-                $reviseCount += $data->filter(function ($row) {
-                    return $row->status === 'Revisi Diajukan';
-                })->count();
-                $hasRevise = $reviseCount > 0 ? "Revisi Diajukan" : null;
+                $dosen = User::whereHas('roles', fn($q) => $q->where('nama', 'dosen'))
+                    ->whereHas('fakultas', fn($q) => $q->where('fakultas.id', $fakultasId))
+                    ->with(['programStudi' => fn($q) => $q->select('program_studi.id', 'nama')])
+                    ->select('id', 'name')->get();
 
-                // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function ($query) {
-                    $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('fakultas', function ($query) use ($fakultasId) {
-                    $query->where('fakultas.id', $fakultasId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
+                $periode = PeriodeSempro::where('id_fakultas', $fakultasId)->get();
+            } else if (in_array($role, ['kaprodi', 'sekprodi', 'admin_prodi'])) {
+                $daftarSempro = $query->whereHas('mahasiswa.programStudi', function ($q) use ($programStudiId) {
+                    $q->where('program_studi.id', $programStudiId);
+                })->get();
+                $currentRole = 'admin';
 
-                $pivot->fakultas->programStudi;
+                $dosen = User::whereHas('roles', fn($q) => $q->where('nama', 'dosen'))
+                    ->with(['programStudi' => fn($q) => $q->select('program_studi.id', 'nama')])
+                    ->select('id', 'name')->get();
 
-                $waktuSempro = PeriodeSempro::where('id_fakultas', $fakultasId)->get();
-            }
-            // If user has the role of Kaprodi, Sekprodi, and Admin_Prodi
-            else if (in_array($role, ['kaprodi', 'sekprodi', 'admin_prodi'])) {
-                $daftarSempro = PendaftaranSempro::whereHas('mahasiswa.programStudi', function ($query) use ($programStudiId) {
-                    $query->where('program_studi.id', $programStudiId); // Adjust based on your column name
-                })->get()->reject(function ($item) {
-                    return is_null($item->mahasiswa); // Remove items where mahasiswa is null
-                });
-                $daftarSempro->each(function ($item) {
-                    $item->role = 'admin';
-                });
+                $periode = PeriodeSempro::where('id_program_studi', $programStudiId)->get();
+            } else if ($role === 'dosen') {
+                // Optimasi 3: Lintas prodi jika dosen terdaftar sebagai pembimbing
+                $daftarSempro = $query->where(function ($q) use ($user) {
+                    $q->where('id_calon_dospem_1', $user->id)->orWhere('id_calon_dospem_2', $user->id);
+                })->get();
+                $currentRole = 'dosen';
 
-                // Calculate revisi count
-                $reviseCount += $data->filter(function ($row) {
-                    return $row->status === 'Revisi Diajukan';
-                })->count();
-                $hasRevise = $reviseCount > 0 ? "Revisi Diajukan" : null;
+                $dosen = User::whereHas('roles', fn($q) => $q->where('nama', 'dosen'))
+                    ->whereHas('programStudi', fn($q) => $q->where('program_studi.id', $programStudiId))
+                    ->select('id', 'name')->get();
 
-                // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function ($query) {
-                    $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function ($query) use ($programStudiId) {
-                    $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
+                $periode = PeriodeSempro::where('id_program_studi', $programStudiId)->get();
+            } else if ($role === 'mahasiswa') {
+                $daftarSempro = $query->where('id_mahasiswa', $user->id)->get();
+                $currentRole = 'mahasiswa';
 
-                // Merge waktuSempro for the current program studi
-                $waktuSempro = PeriodeSempro::where('id_program_studi', $programStudiId)->get();
-            }
-            // If user has the role of Dosen
-            else if (in_array($role, ['dosen'])) {
-                $daftarSempro = PendaftaranSempro::where('id_calon_dospem_1', $user->id)
-                    ->orWhere('id_calon_dospem_2', $user->id)
-                    ->get()->reject(function ($item) {
-                        return is_null($item->mahasiswa); // Remove items where mahasiswa is null
-                    });
-                $daftarSempro->each(function ($item) {
-                    $item->role = 'dosen';
-                });
+                $dosen = User::whereHas('roles', fn($q) => $q->where('nama', 'dosen'))
+                    ->with(['programStudi' => fn($q) => $q->select('program_studi.id', 'nama')])
+                    ->select('id', 'name')->get();
 
-                // Dosen does not need revisi count
-                $reviseCount += $data->filter(function ($row) {
-                    return $row->status === 'Revisi';
-                })->count();
-                $hasRevise = $reviseCount > 0 ? "Revisi" : null;
-
-                // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function ($query) {
-                    $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function ($query) use ($programStudiId) {
-                    $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
-
-                // Merge waktuSempro for the current program studi
-                $waktuSempro = PeriodeSempro::where('id_program_studi', $programStudiId)->get();
-            }
-            // If user has the role of Mahasiswa
-            else if (in_array($role, ['mahasiswa'])) {
-                $daftarSempro = PendaftaranSempro::where('id_mahasiswa', $user->id)->get();
-                $daftarSempro->each(function ($item) {
-                    $item->role = 'mahasiswa';
-                });
-
-                // Calculate revisi count for Mahasiswa
-                $reviseCount += $daftarSempro->filter(function ($row) {
-                    return $row->status === 'Revisi';
-                })->count();
-                $hasRevise = $reviseCount > 0 ? "Revisi" : null;
-
-                // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function ($query) {
-                    $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function ($query) use ($programStudiId) {
-                    $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
-
-                // Merge waktuSempro for the current program studi
-                $waktuSempro = PeriodeSempro::where('id_program_studi', $programStudiId)->get();
+                $periode = PeriodeSempro::where('id_program_studi', $programStudiId)->get();
             }
 
-            // Merge the fetched daftarSempro with the existing data collection
-            $namaDosen = $namaDosen->merge($dosen);
+            // Mapping role & hitung revisi
+            $daftarSempro = $daftarSempro->reject(fn($item) => is_null($item->mahasiswa))
+                ->each(function ($item) use ($currentRole) {
+                    $item->role = $currentRole;
+                });
+
+            // Logika hasRevise sesuai kode asli Anda
+            $targetStatus = in_array($currentRole, ['mahasiswa', 'dosen']) ? 'Revisi' : 'Revisi Diajukan';
+            $reviseCount += $daftarSempro->where('status', $targetStatus)->count();
+
             $data = $data->merge($daftarSempro);
-            $waktuSempro = $waktuSempro->merge($waktuSempro);
+            $namaDosen = $namaDosen->merge($dosen);
+            $waktuSempro = $waktuSempro->merge($periode);
         }
 
-        // Sort data by 'role' to prioritize higher role and make it unique by 'id'
-        $namaDosen = $namaDosen->sortBy('name')->unique('id');
-        $data = $data->sortBy('role')->unique('id');
-        $data = $data->sortBy('created_at');
+        // Finalisasi Variabel
+        $hasRevise = $reviseCount > 0 ? (in_array('mahasiswa', $userRole) || in_array('dosen', $userRole) ? "Revisi" : "Revisi Diajukan") : null;
+
+        $namaDosen = $namaDosen->unique('id')->map(function ($item) {
+            $prodi = $item->programStudi->first()->nama ?? 'No Prodi';
+            $item->nama_prodi_sort = $prodi;
+            $item->display_name = $item->name . " - " . $prodi;
+            return $item;
+        })->sortBy([['nama_prodi_sort', 'asc'], ['name', 'asc']]);
+
+        $data = $data->sortBy('role')->unique('id')->sortBy('created_at');
         $waktuSempro = $waktuSempro->sortByDesc('created_at')->unique('id');
         $kategoriTa = KategoriTA::orderBy('id', 'asc')->get();
 
-        // return response()->json($data);
-        // Return to the view with merged data
-        return view('pages/sempro/daftar_seminar_proposal', compact('data', 'userRole', 'namaDosen', 'userPivot', 'waktuSempro', 'hasRevise', 'reviseCount', 'kategoriTa'));
+        // Pastikan semua variabel asli dikirim kembali
+        return view('pages/sempro/daftar_seminar_proposal', compact(
+            'data',
+            'userRole',
+            'namaDosen',
+            'userPivot',
+            'waktuSempro',
+            'hasRevise',
+            'reviseCount',
+            'kategoriTa'
+        ));
     }
 
 
@@ -199,7 +178,11 @@ class DaftarSemproController extends Controller
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
                 })->whereHas('fakultas', function ($query) use ($fakultasId) {
                     $query->where('fakultas.id', $fakultasId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
+                }) // Ambil data program studi untuk ditampilkan nanti
+                    ->with(['programStudi' => function ($q) {
+                        $q->select('id_program_studi', 'nama'); // sesuaikan nama kolomnya
+                    }])
+                    ->select('id', 'name')->without(['pivot', 'roles'])->get();
 
                 $waktuSempro = PeriodeSempro::where('id_fakultas', $fakultasId)
                     ->select('id', 'periode')
@@ -222,9 +205,10 @@ class DaftarSemproController extends Controller
                 // Get the name of the dosen in the same program studi as the current user
                 $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function ($query) use ($programStudiId) {
-                    $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
+                }) // Ambil data program studi untuk ditampilkan nanti
+                    ->with(['programStudi' => function ($q) {
+                        $q->select('id_program_studi', 'nama'); // sesuaikan nama kolomnya
+                    }])->select('id', 'name')->without(['pivot', 'roles'])->get();
 
                 $waktuSempro = PeriodeSempro::where('id_program_studi', $programStudiId)
                     ->select('id', 'periode')
@@ -247,9 +231,10 @@ class DaftarSemproController extends Controller
                 // Get the name of the dosen in the same program studi as the current user
                 $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function ($query) use ($programStudiId) {
-                    $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
+                }) // Ambil data program studi untuk ditampilkan nanti
+                    ->with(['programStudi' => function ($q) {
+                        $q->select('id_program_studi', 'nama'); // sesuaikan nama kolomnya
+                    }])->select('id', 'name')->without(['pivot', 'roles'])->get();
 
                 $waktuSempro = PeriodeSempro::where('id_program_studi', $programStudiId)
                     // ->latest('periode')
@@ -261,7 +246,23 @@ class DaftarSemproController extends Controller
             }
         }
 
-        $namaDosen = $namaDosen->sortBy('name')->unique('id');
+        // 1. Unikkan
+        $namaDosen = $namaDosen->unique('id');
+
+        // 2. Map untuk buat atribut tampilan
+        $namaDosen = $namaDosen->map(function ($item) {
+            $prodi = $item->programStudi->first()->nama ?? 'No Prodi';
+            $item->nama_prodi_sort = $prodi; // Simpan sementara untuk sorting
+            $item->display_name = $item->name . " - " . $prodi;
+            return $item;
+        });
+
+        // 3. Sort berdasarkan Prodi, lalu Nama
+        $namaDosen = $namaDosen->sortBy([
+            ['nama_prodi_sort', 'asc'],
+            ['name', 'asc'],
+        ]);
+
         $waktuSemproLatest = $waktuSemproLatest->sortByDesc('created_at');
         $kategoriTa = KategoriTA::orderBy('id', 'asc')->get();
 
@@ -403,7 +404,7 @@ class DaftarSemproController extends Controller
                 'proposalJudul' => 'string|max:191',
                 'calonDospem1' => 'exists:users,id',
                 'calonDospem2' => 'exists:users,id',
-                'kategoriTugasAkhir' => 'required|exists:kategori_ta,id',
+                // 'kategoriTugasAkhir' => 'required|exists:kategori_ta,id',
                 'fileTranskripNilai' => ['file', 'mimes:pdf', 'max:15360', new FileNameValidator(160)],
                 'fileProposalSkripsi' => ['file', 'mimes:pdf', 'max:15360', new FileNameValidator(160)],
             ];
@@ -428,6 +429,11 @@ class DaftarSemproController extends Controller
             $validator = Validator::make($request->all(), $rules, $customMessages);
             $validator->validate();
 
+
+            if ($validator->fails()) {
+                return redirect()->route('daftar.seminar.proposal')
+                    ->with('error', $validator); // Mengirim pesan error ke view
+            }
             if ($daftarSempro->status !== 'Revisi') {
                 return redirect()->route('daftar.seminar.proposal')->with('error', 'Data tidak dapat diubah karena status bukan "Revisi".');
             }

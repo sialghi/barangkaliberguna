@@ -25,136 +25,146 @@ class DaftarSemhasController extends Controller
 {
     public function index()
     {
+        // 1. Ambil data user dan role pivot dengan Eager Loading untuk menghindari N+1 query
         $user = Auth::user();
         $userRole = $user->roles->pluck('nama')->toArray();
-        $userPivot = UsersPivot::where('id_user', $user->id)->with('role', 'programStudi', 'fakultas')->orderBy('id_role', 'desc')->get();
+        $userPivot = UsersPivot::where('id_user', $user->id)
+            ->with(['role', 'programStudi', 'fakultas.programStudi'])
+            ->orderBy('id_role', 'desc')
+            ->get();
 
+        // 2. Inisialisasi koleksi dan variabel pendukung
         $data = collect();
-        $namaDosen = collect();
-
+        $namaDosenRaw = collect();
         $bimbinganCount = 0;
         $reviseCount = 0;
-        $hasRevise = '';
+
+        // 3. Tentukan relasi pendaftaran yang akan di-eager load untuk tampilan tabel di View
+        $semhasRelations = [
+            'mahasiswa.programStudi',
+            'mahasiswa.fakultas',
+            // 'pembimbing1',
+            // 'pembimbing2',
+            // 'dosenPembimbingAkademik',
+            // 'calonPenguji1',
+            // 'calonPenguji2',
+            'kategoriTa'
+        ];
 
         foreach ($userPivot as $pivot) {
             $role = $pivot->role->nama;
             $programStudiId = $pivot->id_program_studi;
             $fakultasId = $pivot->id_fakultas;
 
-            // If user has the role of Dekan, Wadek_Satu, Wadek_Dua, Wadek_Tiga, or Admin_Dekanat
+            // Inisialisasi base query pendaftaran
+            $query = PendaftaranSemhas::with($semhasRelations);
+
+            // --- LOGIKA FILTER BERDASARKAN ROLE ---
+
+            // Role Dekanat: Melihat semua data dalam lingkup Fakultas
             if (in_array($role, ['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'])) {
-                $daftarSemhas = PendaftaranSemhas::whereHas('mahasiswa.fakultas', function ($query) use ($fakultasId) {
-                    $query->where('fakultas.id', $fakultasId); // Adjust based on your column name
-                })->get()->reject(function ($item) {
-                    return is_null($item->mahasiswa); // Remove items where mahasiswa is null
-                });
-                $daftarSemhas->each(function ($item) {
-                    $item->role = 'admin';
-                });
+                $daftarSemhas = $query->whereHas('mahasiswa.fakultas', function ($q) use ($fakultasId) {
+                    $q->where('fakultas.id', $fakultasId);
+                })->get();
 
-                // Calculate revisi count
-                $reviseCount += $data->filter(function ($row) {
-                    return $row->status === 'Revisi Diajukan';
-                })->count();
-                $hasRevise = $reviseCount > 0 ? "Revisi Diajukan" : null;
+                $currentRole = 'admin';
+                $targetStatus = 'Revisi Diajukan';
 
-                // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function ($query) {
-                    $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('fakultas', function ($query) use ($fakultasId) {
-                    $query->where('fakultas.id', $fakultasId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
+                // Ambil dosen satu fakultas (Lintas Prodi)
+                $dosen = User::whereHas('roles', fn($q) => $q->where('nama', 'dosen'))
+                    ->whereHas('fakultas', fn($q) => $q->where('fakultas.id', $fakultasId))
+                    ->with(['programStudi' => fn($q) => $q->select('program_studi.id', 'nama')])
+                    ->select('id', 'name')->get();
 
-                $pivot->fakultas->programStudi;
-            }
-            // If user has the role of Kaprodi, Sekprodi, and Admin_Prodi
-            else if (in_array($role, ['kaprodi', 'sekprodi', 'admin_prodi'])) {
-                $daftarSemhas = PendaftaranSemhas::whereHas('mahasiswa.programStudi', function ($query) use ($programStudiId) {
-                    $query->where('program_studi.id', $programStudiId); // Adjust based on your column name
-                })->get()->reject(function ($item) {
-                    return is_null($item->mahasiswa); // Remove items where mahasiswa is null
-                });
-                $daftarSemhas->each(function ($item) {
-                    $item->role = 'admin';
-                });
+                // $dosenAkademik = User::whereHas('roles', fn($q) => $q->where('nama', 'dosen'))
+                //     ->whereHas('fakultas', fn($q) => $q->where('id', $fakultasId))
+                //     ->with(['programStudi' => fn($q) => $q->select('program_studi.id', 'nama')])
+                //     ->select('id', 'name')->get();
 
-                // Calculate revisi count
-                $reviseCount += $data->filter(function ($row) {
-                    return $row->status === 'Revisi Diajukan';
-                })->count();
-                $hasRevise = $reviseCount > 0 ? "Revisi Diajukan" : null;
+                // Role Prodi: Melihat semua data dalam lingkup Program Studi
+            } else if (in_array($role, ['kaprodi', 'sekprodi', 'admin_prodi'])) {
+                $daftarSemhas = $query->whereHas('mahasiswa.programStudi', function ($q) use ($programStudiId) {
+                    $q->where('program_studi.id', $programStudiId);
+                })->get();
 
-                // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function ($query) {
-                    $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function ($query) use ($programStudiId) {
-                    $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
-            }
-            // If user has the role of Dosen
-            else if (in_array($role, ['dosen'])) {
-                $daftarSemhas = PendaftaranSemhas::where('id_dosen_pembimbing_akademik', $user->id)
-                    ->orWhere('id_dosen_pembimbing_1', $user->id)
-                    ->orWhere('id_dosen_pembimbing_2', $user->id)
-                    ->orWhere('id_calon_penguji_1', $user->id)
-                    ->orWhere('id_calon_penguji_2', $user->id)
-                    ->get()->reject(function ($item) {
-                        return is_null($item->mahasiswa); // Remove items where mahasiswa is null
-                    });
-                $daftarSemhas->each(function ($item) {
-                    $item->role = 'dosen';
-                });
+                $currentRole = 'admin';
+                $targetStatus = 'Revisi Diajukan';
 
-                // Calculate revisi count
-                $reviseCount += $data->filter(function ($row) {
-                    return $row->status === 'Revisi';
-                })->count();
-                $hasRevise = $reviseCount > 0 ? "Revisi" : null;
+                $dosen = User::whereHas('roles', fn($q) => $q->where('nama', 'dosen'))
+                    ->with(['programStudi' => fn($q) => $q->select('program_studi.id', 'nama')])
+                    ->select('id', 'name')->get();
 
-                // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function ($query) {
-                    $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function ($query) use ($programStudiId) {
-                    $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
-            }
-            // If user has the role of Mahasiswa
-            else if (in_array($role, ['mahasiswa'])) {
-                $daftarSemhas = PendaftaranSemhas::where('id_mahasiswa', $user->id)->get();
-                $daftarSemhas->each(function ($item) {
-                    $item->role = 'mahasiswa';
-                });
+                // Role Dosen: Melihat mahasiswa bimbingan atau ujian (Bisa Lintas Prodi)
+            } else if ($role === 'dosen') {
+                $daftarSemhas = $query->where(function ($q) use ($user) {
+                    $q->where('id_dosen_pembimbing_akademik', $user->id)
+                        ->orWhere('id_dosen_pembimbing_1', $user->id)
+                        ->orWhere('id_dosen_pembimbing_2', $user->id)
+                        ->orWhere('id_calon_penguji_1', $user->id)
+                        ->orWhere('id_calon_penguji_2', $user->id);
+                })->get();
+
+                $currentRole = 'dosen';
+                $targetStatus = 'Revisi';
+
+                $dosen = User::whereHas('roles', fn($q) => $q->where('nama', 'dosen'))
+                    ->whereHas('programStudi', fn($q) => $q->where('program_studi.id', $programStudiId))
+                    ->select('id', 'name')->get();
+
+                // Role Mahasiswa: Hanya melihat data dirinya sendiri
+            } else if ($role === 'mahasiswa') {
+                $daftarSemhas = $query->where('id_mahasiswa', $user->id)->get();
+                $currentRole = 'mahasiswa';
+                $targetStatus = 'Revisi';
 
                 $bimbinganCount = BimbinganSkripsi::where('id_mahasiswa', $user->id)->count();
 
-                // Calculate revisi count
-                $reviseCount += $data->filter(function ($row) {
-                    return $row->status === 'Revisi';
-                })->count();
-                $hasRevise = $reviseCount > 0 ? "Revisi" : null;
-
-                // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function ($query) {
-                    $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function ($query) use ($programStudiId) {
-                    $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
+                $dosen = User::whereHas('roles', fn($q) => $q->where('nama', 'dosen'))
+                    ->with(['programStudi' => fn($q) => $q->select('program_studi.id', 'nama')])
+                    ->select('id', 'name')->get();
             }
 
-            // Merge the fetched daftarSemhas with the existing data collection
+            // 4. Transformasi Koleksi: Reject data sampah, set role atribut, dan hitung revisi
+            $daftarSemhas = $daftarSemhas->reject(fn($item) => is_null($item->mahasiswa))
+                ->each(function ($item) use ($currentRole) {
+                    $item->role = $currentRole;
+                });
+
+            // Hitung Revisi secara efisien dari koleksi yang sudah ada
+            $reviseCount += $daftarSemhas->where('status', $targetStatus)->count();
+
+            // Merge data ke koleksi utama
             $data = $data->merge($daftarSemhas);
-            $namaDosen = $namaDosen->merge($dosen);
+            $namaDosenRaw = $namaDosenRaw->merge($dosen);
         }
 
-        // Sort data by 'role' to prioritize higher role and make it unique by 'id'
-        $data = $data->sortBy('role')->unique('id');
-        $data = $data->sortBy('created_at');
-        $namaDosen = $namaDosen->sortBy('name')->unique('id');
+        // 5. Finalisasi Data (Unique, Map untuk Display, dan Sort)
+        $hasRevise = $reviseCount > 0 ? (in_array('mahasiswa', $userRole) || in_array('dosen', $userRole) ? "Revisi" : "Revisi Diajukan") : null;
 
-        // return response()->json($data);
+        // Memproses tampilan nama dosen "Nama - Prodi" dan Sorting
+        $namaDosen = $namaDosenRaw->unique('id')->map(function ($item) {
+            $prodi = $item->programStudi->first()->nama ?? 'No Prodi';
+            $item->nama_prodi_sort = $prodi;
+            $item->display_name = $item->name . " - " . $prodi;
+            return $item;
+        })->sortBy([
+            ['nama_prodi_sort', 'asc'],
+            ['name', 'asc']
+        ]);
 
-        // Return to the view with merged data
-        return view('pages/semhas/daftar_seminar_hasil',  compact('data', 'bimbinganCount', 'userRole', 'namaDosen', 'userPivot', 'hasRevise', 'reviseCount'));
+        // Sorting data pendaftaran
+        $data = $data->sortBy('role')->unique('id')->sortBy('created_at');
+
+        // 6. Return ke view
+        return view('pages/semhas/daftar_seminar_hasil', compact(
+            'data',
+            'bimbinganCount',
+            'userRole',
+            'namaDosen',
+            'userPivot',
+            'hasRevise',
+            'reviseCount'
+        ));
     }
 
     public function show($id)
@@ -175,6 +185,7 @@ class DaftarSemhasController extends Controller
         $userPivot = UsersPivot::where('id_user', $user->id)->with('role', 'programStudi')->orderBy('id_role', 'desc')->get();
 
         $namaDosen = collect();
+        $namaDosenAkademik = collect();
 
         foreach ($userPivot as $pivot) {
             $role = $pivot->role->nama;
@@ -188,31 +199,72 @@ class DaftarSemhasController extends Controller
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
                 })->whereHas('fakultas', function ($query) use ($fakultasId) {
                     $query->where('fakultas.id', $fakultasId); // Filter by the same program studi as the current user
+                })->with(['programStudi'  => function ($q) {
+                    $q->select('program_studi.id', 'nama');
+                }])->select('id', 'name')->without(['pivot', 'roles'])->get();
+
+                $dosenAkademik = User::whereHas('roles', function ($query) {
+                    $query->where('nama', 'dosen'); // Checking for 'dosen' role
+                })->whereHas('fakultas', function ($query) use ($fakultasId) {
+                    $query->where('fakultas.id', $fakultasId); // Filter by the same program studi as the current user
+                })->whereHas('programStudi', function ($query) use ($programStudiId) {
+                    $query->where('program_studi.id', $programStudiId);
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
             }
             // If user has the role of Kaprodi, Sekprodi, and Admin_Prodi
             else if (in_array($role, ['kaprodi', 'sekprodi', 'admin_prodi'])) {
                 $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
+                })->with(['programStudi' => function ($query2) {
+                    $query2->select('program_studi.id', 'nama');
+                }])->select('id', 'name')->without(['pivot', 'roles'])->get();
+
+                $dosenAkademik = User::whereHas('roles', function ($query) {
+                    $query->where('nama', 'dosen'); // Checking for 'dosen' role
                 })->whereHas('programStudi', function ($query) use ($programStudiId) {
-                    $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
+                    $query->where('program_studi.id', $programStudiId);
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
             }
             // If user has the role of Mahasiswa
             else if (in_array($role, ['mahasiswa'])) {
+                // Dosen Lintas Prodi
                 $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
+                })->with(['programStudi' => function ($query2) {
+                    $query2->select('program_studi.id', 'nama');
+                }])->select('id', 'name')->without(['pivot', 'roles'])->get();
+                // Dosen Akademik
+                $dosenAkademik = User::whereHas('roles', function ($query) {
+                    $query->where('nama', 'dosen'); // Checking for 'dosen' role
                 })->whereHas('programStudi', function ($query) use ($programStudiId) {
-                    $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
+                    $query->where('program_studi.id', $programStudiId);
                 })->select('id', 'name')->without(['pivot', 'roles'])->get();
             }
 
+            $namaDosenAkademik = $namaDosenAkademik->merge($dosenAkademik);
             $namaDosen = $namaDosen->merge($dosen);
         }
 
-        $namaDosen = $namaDosen->sortBy('name')->unique('id');
+        // Pengaturan nama dosen akademik
+        $namaDosenAkademik = $namaDosenAkademik->unique('id')->map(function ($item) {
+            $item->display_name = $item->name;
+            return $item;
+        })->sortBy([
+            ['name', 'asc']
+        ]);
 
-        return view('pages/semhas/daftar_seminar_hasil_add', compact('user', 'userPivot', 'namaDosen'));
+        // $namaDosen = $namaDosen->sortBy('name')->unique('id');
+        $namaDosen = $namaDosen->unique('id')->map(function ($item,) {
+            $prodi = $item->programStudi->first()->nama ?? 'No Prodi';
+            $item->nama_prodi_sort = $prodi;
+            $item->display_name = $item->name . " - " . $prodi;
+            return $item;
+        })->sortBy([
+            ['nama_prodi_sort', 'asc'],
+            ['name', 'asc']
+        ]);
+
+        return view('pages/semhas/daftar_seminar_hasil_add', compact('user', 'userPivot', 'namaDosen', 'namaDosenAkademik'));
     }
 
     public function store(Request $request)
@@ -424,6 +476,11 @@ class DaftarSemhasController extends Controller
             ->first();
 
         $namaDosen = collect();
+        $namaDosenAkademik = collect();
+
+        // TAMBAHKAN INI: Inisialisasi variabel sebagai koleksi kosong
+        $dosen = collect();
+        $dosenAkademik = collect();
 
         foreach ($userPivot as $pivot) {
             $role = $pivot->role->nama;
@@ -432,42 +489,92 @@ class DaftarSemhasController extends Controller
 
             // If user has the role of Dekan, Wadek_Satu, Wadek_Dua, Wadek_Tiga, or Admin_Dekanat
             if (in_array($role, ['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'])) {
-                // Get the name of the dosen in the same program studi as the current user
                 $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
                 })->whereHas('fakultas', function ($query) use ($fakultasId) {
-                    $query->where('fakultas.id', $fakultasId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
+                    $query->where('fakultas.id', $fakultasId); // Tambahkan prefix 'fakultas.'
+                })->with(['programStudi'  => function ($q) {
+                    $q->select('program_studi.id', 'nama');
+                }])->select('id', 'name')->without(['pivot', 'roles'])->get();
 
-                $namaDosen = $namaDosen->merge($dosen);
+                // CONTOH PERBAIKAN PADA SEMUA BLOK ROLE
+                $dosenAkademik = User::whereHas('roles', function ($query) {
+                    $query->where('roles.nama', 'dosen'); // Gunakan roles.nama
+                })
+                    ->whereHas('programStudi', function ($query) use ($programStudiId) {
+                        // INI BAGIAN KRUSIAL: Tambahkan 'program_studi.' sebelum 'id'
+                        $query->where('program_studi.id', $programStudiId);
+                    })
+                    ->select('users.id', 'users.name') // Tambahkan prefix users.id
+                    ->without(['pivot', 'roles'])
+                    ->get();
             }
             // If user has the role of Kaprodi, Sekprodi, and Admin_Prodi
             else if (in_array($role, ['kaprodi', 'sekprodi', 'admin_prodi'])) {
                 $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function ($query) use ($programStudiId) {
-                    $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
+                })->with(['programStudi' => function ($query2) {
+                    $query2->select('program_studi.id', 'nama');
+                }])->select('id', 'name')->without(['pivot', 'roles'])->get();
 
-                $namaDosen = $namaDosen->merge($dosen);
+                // CONTOH PERBAIKAN PADA SEMUA BLOK ROLE
+                $dosenAkademik = User::whereHas('roles', function ($query) {
+                    $query->where('roles.nama', 'dosen'); // Gunakan roles.nama
+                })
+                    ->whereHas('programStudi', function ($query) use ($programStudiId) {
+                        // INI BAGIAN KRUSIAL: Tambahkan 'program_studi.' sebelum 'id'
+                        $query->where('program_studi.id', $programStudiId);
+                    })
+                    ->select('users.id', 'users.name') // Tambahkan prefix users.id
+                    ->without(['pivot', 'roles'])
+                    ->get();
             }
             // If user has the role of Mahasiswa
             else if (in_array($role, ['mahasiswa'])) {
+                // Dosen Lintas Prodi
                 $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function ($query) use ($programStudiId) {
-                    $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
-
-                $namaDosen = $namaDosen->merge($dosen);
+                })->with(['programStudi' => function ($query2) {
+                    $query2->select('program_studi.id', 'nama');
+                }])->select('id', 'name')->without(['pivot', 'roles'])->get();
+                // Dosen Akademik
+                // CONTOH PERBAIKAN PADA SEMUA BLOK ROLE
+                $dosenAkademik = User::whereHas('roles', function ($query) {
+                    $query->where('roles.nama', 'dosen'); // Gunakan roles.nama
+                })
+                    ->whereHas('programStudi', function ($query) use ($programStudiId) {
+                        // INI BAGIAN KRUSIAL: Tambahkan 'program_studi.' sebelum 'id'
+                        $query->where('program_studi.id', $programStudiId);
+                    })
+                    ->select('users.id', 'users.name') // Tambahkan prefix users.id
+                    ->without(['pivot', 'roles'])
+                    ->get();
             }
+
+            $namaDosenAkademik = $namaDosenAkademik->merge($dosenAkademik);
+            $namaDosen = $namaDosen->merge($dosen);
         }
 
-        $namaDosen = $namaDosen->sortBy('name')->unique('id');
+        // Pengaturan nama dosen akademik
+        $namaDosenAkademik = $namaDosenAkademik->unique('id')->map(function ($item) {
+            $item->display_name = $item->name;
+            return $item;
+        })->sortBy([
+            ['name', 'asc']
+        ]);
 
-        // return response()->json($pendaftaranSemhas);
+        // $namaDosen = $namaDosen->sortBy('name')->unique('id');
+        $namaDosen = $namaDosen->unique('id')->map(function ($item,) {
+            $prodi = $item->programStudi->first()->nama ?? 'No Prodi';
+            $item->nama_prodi_sort = $prodi;
+            $item->display_name = $item->name . " - " . $prodi;
+            return $item;
+        })->sortBy([
+            ['nama_prodi_sort', 'asc'],
+            ['name', 'asc']
+        ]);
 
-        return view('pages/semhas/daftar_seminar_hasil_edit', compact('user', 'userPivot', 'pendaftaranSemhas', 'namaDosen'));
+        return view('pages/semhas/daftar_seminar_hasil_edit', compact('user', 'userPivot', 'pendaftaranSemhas', 'namaDosen', 'namaDosenAkademik'));
     }
 
     public function update(Request $request, $id)

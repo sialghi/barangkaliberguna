@@ -1,522 +1,562 @@
-@extends('adminlte::page')
+  @extends('adminlte::page')
 
-@section('title', 'Sistem Informasi Layanan Prodi Fakultas Sains dan Teknologi')
+  @section('title', 'Sistem Informasi Layanan Prodi Fakultas Sains dan Teknologi')
 
-@section('css')
-    <link rel="stylesheet" href="/css/styles.css">
-@stop
+  @section('css')
+      <link rel="stylesheet" href="/css/styles.css">
+  @stop
 
-@section('plugins.BootstrapSelect', true)
+  @section('plugins.BootstrapSelect', true)
 
-@section('content_header')
-    <div class="d-flex flex-row">
-        <h1>Input Nilai Seminar Hasil</h1>
-        <i id="panduan" class="fas fa-question-circle ml-2 my-2" data-toggle="modal" data-target="#infoModal"></i>
-    </div>
-    <hr>
-    <div class="modal fade" id="infoModal" tabindex="-1" role="dialog" aria-labelledby="infoModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Panduan Halaman</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Tutup">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+  @section('content_header')
+      <div class="d-flex flex-row">
+          <h1>Input Nilai Seminar Hasil</h1>
+          <i id="panduan" class="fas fa-question-circle ml-2 my-2" data-toggle="modal" data-target="#infoModal"></i>
+      </div>
+      <hr>
+      <div class="modal fade" id="infoModal" tabindex="-1" role="dialog" aria-labelledby="infoModalLabel" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h5 class="modal-title">Panduan Halaman</h5>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Tutup">
+                          <span aria-hidden="true">&times;</span>
+                      </button>
+                  </div>
+                  <div class="modal-body">
+                      <div id="panduanSection">
+                          <div>
+                              <p>Panduan Tombol</p>
+                              <table>
+                                  <tr>
+                                      <th><img class="w-100" src="/img/panduan/btnSubmitNilai.png" /></th>
+                                      <td>Tombol untuk submit input nilai.</td>
+                                  </tr>
+                              </table>
+                          </div>
+                          <div class="mt-4">
+                              <p>Panduan Pengisian</p>
+                              <table>
+                                  <tr>
+                                      <th>Nama Mahasiswa</th>
+                                      <td>Nama mahasiswa yang diinput.</td>
+                                  </tr>
+                                  <tr>
+                                      <th>Nomor Induk Mahasiswa</th>
+                                      <td>Nomor Induk Mahasiswa yang diinput.</td>
+                                  </tr>
+                                  <tr>
+                                      <th>Judul Tugas Akhir</th>
+                                      <td>Judul Tugas Akhir yang diinput.</td>
+                                  </tr>
+                                  <tr>
+                                      <th>Tanggal Seminar</th>
+                                      <td>Tanggal Seminar yang diinput.</td>
+                                  </tr>
+                                  <tr>
+                                      <th>Dosen Pembimbing 1</th>
+                                      <td>Dosen pembimbing 1 yang diinput.</td>
+                                  </tr>
+                                  <tr>
+                                      <th>Nilai Dosen Pembimbing 1</th>
+                                      <td>Nilai dosen pembimbing 1 yang diinput.</td>
+                                  </tr>
+                                  <tr>
+                                      <th>Dosen Pembimbing 2</th>
+                                      <td>Dosen pembimbing 2 yang diinput.</td>
+                                  </tr>
+                                  <tr>
+                                      <th>Nilai Dosen Pembimbing 2</th>
+                                      <td>Nilai dosen pembimbing 2 yang diinput.</td>
+                                  </tr>
+                                  <tr>
+                                      <th>Dosen Penguji 1</th>
+                                      <td>Dosen penguji 1 yang diinput.</td>
+                                  </tr>
+                                  <tr>
+                                      <th>Nilai Dosen Penguji 1</th>
+                                      <td>Nilai dosen penguji 1 yang diinput.</td>
+                                  </tr>
+                                  <tr>
+                                      <th>Dosen Penguji 2</th>
+                                      <td>Dosen penguji 2 yang diinput.</td>
+                                  </tr>
+                                  <tr>
+                                      <th>Nilai Dosen Penguji 2</th>
+                                      <td>Nilai dosen penguji 2 yang diinput.</td>
+                                  </tr>
+                              </table>
+                          </div>
+                      </div>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-primary" data-dismiss="modal">Mengerti</button>
+                  </div>
+              </div>
+          </div>
+      </div>
+  @stop
+
+  @php
+      $config = ['format' => 'YYYY-MM-DD'];
+  @endphp
+
+  @section('content')
+
+      @if ($errors->hasAny(['pembimbing1_not_found', 'pembimbing2_not_found', 'penguji1_not_found', 'penguji2_not_found']))
+          <x-adminlte-alert id="error-alert" theme="danger" title="Error">
+              @foreach (['pembimbing1_not_found', 'pembimbing2_not_found', 'penguji1_not_found', 'penguji2_not_found'] as $field)
+                  @if ($errors->has($field))
+                      <li>{{ $errors->first($field) }}</li>
+                  @endif
+              @endforeach
+          </x-adminlte-alert>
+
+          <script>
+              setTimeout(function() {
+                  document.getElementById('error-alert').style.display = 'none';
+              }, 3000);
+          </script>
+      @endif
+
+
+      <form action="{{ route('store.nilai.seminar.hasil') }}" method="POST">
+          @csrf
+          <label for="pendaftarSemhasSelect">Data Mahasiswa <span class="text-red">*</span> </label>
+          <x-adminlte-select-bs name="pendaftarSemhasSelect" label-class="text-black" igroup-size="md"
+              data-title="Pilih Mahasiswa..." data-live-search
+              data-style='border: 1px solid #ced4da; background-color: #fff;' data-live-search-placeholder="Cari..."
+              data-show-tick value="{{ old('pendaftarSemhasSelect') }}">
+              <x-slot name="prependSlot">
+                  <div class="input-group-text bg-gradient-info">
+                      <i class="fas fa-id-card"></i>
+                  </div>
+              </x-slot>
+              @if (count($pendaftarSemhas) == 0)
+                  <option value="" disabled>Tidak ada data mahasiswa pendaftar seminar hasil</option>
+              @else
+                  @foreach ($pendaftarSemhas as $data)
+                      <option value="{{ $data->id }}" {{ old('pendaftarSemhasSelect') == $data->id ? 'selected' : '' }}>
+                          {{ $data->waktu_seminar }}, {{ $data->mahasiswa->nim_nip_nidn }} - {{ $data->mahasiswa->name }}
+                      </option>
+                  @endforeach
+              @endif
+          </x-adminlte-select-bs>
+
+          {{-- <x-adminlte-select id="pendaftarSemhasSelect" name="pendaftarSemhasSelect" label="Data Mahasiswa">
+          <x-slot name="prependSlot">
+                <div class="input-group-text bg-gradient-info">
+                          <i class="fas fa-id-card"></i>
                 </div>
-                <div class="modal-body">
-                    <div id="panduanSection">
-                        <div>
-                            <p>Panduan Tombol</p>
-                            <table>
-                                <tr>
-                                    <th><img class="w-100" src="/img/panduan/btnSubmitNilai.png"/></th>
-                                    <td>Tombol untuk submit input nilai.</td>
-                                </tr>
-                            </table>
-                        </div>
-                        <div class="mt-4">
-                            <p>Panduan Pengisian</p>
-                            <table>
-                                <tr>
-                                    <th>Nama Mahasiswa</th>
-                                    <td>Nama mahasiswa yang diinput.</td>
-                                </tr>
-                                <tr>
-                                    <th>Nomor Induk Mahasiswa</th>
-                                    <td>Nomor Induk Mahasiswa yang diinput.</td>
-                                </tr>
-                                <tr>
-                                    <th>Judul Tugas Akhir</th>
-                                    <td>Judul Tugas Akhir yang diinput.</td>
-                                </tr>
-                                <tr>
-                                    <th>Tanggal Seminar</th>
-                                    <td>Tanggal Seminar yang diinput.</td>
-                                </tr>
-                                <tr>
-                                    <th>Dosen Pembimbing 1</th>
-                                    <td>Dosen pembimbing 1 yang diinput.</td>
-                                </tr>
-                                <tr>
-                                    <th>Nilai Dosen Pembimbing 1</th>
-                                    <td>Nilai dosen pembimbing 1 yang diinput.</td>
-                                </tr>
-                                <tr>
-                                    <th>Dosen Pembimbing 2</th>
-                                    <td>Dosen pembimbing 2 yang diinput.</td>
-                                </tr>
-                                <tr>
-                                    <th>Nilai Dosen Pembimbing 2</th>
-                                    <td>Nilai dosen pembimbing 2 yang diinput.</td>
-                                </tr>
-                                <tr>
-                                    <th>Dosen Penguji 1</th>
-                                    <td>Dosen penguji 1 yang diinput.</td>
-                                </tr>
-                                <tr>
-                                    <th>Nilai Dosen Penguji 1</th>
-                                    <td>Nilai dosen penguji 1 yang diinput.</td>
-                                </tr>
-                                <tr>
-                                    <th>Dosen Penguji 2</th>
-                                    <td>Dosen penguji 2 yang diinput.</td>
-                                </tr>
-                                <tr>
-                                    <th>Nilai Dosen Penguji 2</th>
-                                    <td>Nilai dosen penguji 2 yang diinput.</td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-dismiss="modal">Mengerti</button>
-                </div>
-            </div>
-        </div>
-    </div>
-@stop
+          </x-slot>
+          <option value="" selected disabled hidden>Pilih Pendaftar</option>
+          @if (count($pendaftarSemhas) == 0)
+                <option value="" disabled>Tidak ada data mahasiswa pendaftar seminar hasil</option>
+          @else
+                @foreach ($pendaftarSemhas as $data)
+                          <option value="{{ $data->id }}" {{ old('pendaftarSemhasSelect') == $data->id ? 'selected' : '' }}>
+                          {{ $data->waktu_seminar }}, {{ $data->mahasiswa->nim_nip_nidn }} - {{ $data->mahasiswa->name }}
+                          </option>
+                @endforeach
+          @endif
+      </x-adminlte-select> --}}
+          <input id="pendaftarSemhasId" type="hidden" name="pendaftarSemhasId" value="">
 
-@php
-    $config = ['format' => 'YYYY-MM-DD'];
-@endphp
+          <table style=" background-color: transparent;">
+              <tr>
+                  <td>
+                      {{-- NAMA MAHASISWA --}}
+                      <label for="nama_mahasiswa">Nama Mahasiswa <span class="text-red">*</span></label>
+                      <x-adminlte-input name="nama_mahasiswa" id="nama_mahasiswa" placeholder="Nama Mahasiswa"
+                          value="{{ old('nama_mahasiswa') }}" autocomplete="off" disabled>
+                          <x-slot name="prependSlot">
+                              <div class="input-group-text bg-gradient-info">
+                                  <i class="fas fa-user"></i>
+                              </div>
+                          </x-slot>
+                      </x-adminlte-input>
+                  </td>
+                  <td>
+                      {{-- NIM --}}
+                      <label for="nim">Nomor Induk Mahasiswa <span class="text-red">*</span></label>
+                      <x-adminlte-input name="nim" id="nim" placeholder="Nomor Induk Mahasiswa" type="number"
+                          value="{{ old('nim') }}" autocomplete="off" disabled>
+                          <x-slot name="prependSlot">
+                              <div class="input-group-text bg-gradient-info">
+                                  <i class="fas fa-address-card"></i>
+                              </div>
+                          </x-slot>
+                      </x-adminlte-input>
+                  </td>
+              </tr>
+              <tr>
+                  <td>
+                      {{-- Judul Skripsi --}}
+                      <label for="judulSkripsi">Judul Tugas Akhir <span class="text-red">*</span></label>
+                      <x-adminlte-input name="judulSkripsi" id="judulSkripsi" placeholder="Masukkan judul skripsi..."
+                          value="{{ old('judulSkripsi') }}" autocomplete="off">
+                          <x-slot name="prependSlot">
+                              <div class="input-group-text bg-gradient-info">
+                                  <i class="fas fa-pen"></i>
+                              </div>
+                          </x-slot>
+                      </x-adminlte-input>
+                  </td>
+                  <td>
+                      {{-- Tanggal Seminar --}}
+                      <label for="tanggalSeminar">Tanggal Seminar <span class="text-red">*</span></label>
+                      <x-adminlte-input-date name="tanggalSeminar" id="tanggalSeminar" :config="$config"
+                          placeholder="Pilih tanggal seminar..." value="{{ old('tanggalSeminar') }}" autocomplete="off">
+                          <x-slot name="prependSlot">
+                              <div class="input-group-text bg-gradient-danger">
+                                  <i class="fas fa-calendar-alt"></i>
+                              </div>
+                          </x-slot>
+                      </x-adminlte-input-date>
+                  </td>
+              </tr>
+              <tr>
+                  <td>
+                      <label for="tipeUjian">Tipe Ujian <span class="text-red">*</span></label>
+                      <x-adminlte-select name="tipeUjian" id="tipeUjian">
+                          <option value="" selected disabled hidden>Pilih Tipe Ujian</option>
+                          <option value="online" {{ old('tipeUjian') == 'online' ? 'selected' : '' }}>Online</option>
+                          <option value="offline" {{ old('tipeUjian') == 'offline' ? 'selected' : '' }}>Offline</option>
+                          <x-slot name="prependSlot">
+                              <div class="input-group-text bg-gradient-purple">
+                                  <i class="fas fa-list"></i>
+                              </div>
+                          </x-slot>
+                      </x-adminlte-select>
+                  </td>
+                  <td>
+                      @php
+                          $configJam = ['format' => 'HH:mm'];
+                      @endphp
+                      {{-- Jam Seminar --}}
+                      <label for="jamSeminar">Jam Seminar</label>
+                      <x-adminlte-input-date name="jamSeminar" id="jamSeminar" :config="$configJam"
+                          placeholder="Pilih jam seminar..." value="{{ old('jamSeminar') }}" autocomplete="off">
+                          <x-slot name="prependSlot">
+                              <div class="input-group-text bg-gradient-cyan">
+                                  <i class="fas fa-clock"></i>
+                              </div>
+                          </x-slot>
+                      </x-adminlte-input-date>
+                  </td>
+              </tr>
+              <tr>
+                  <td>
+                      <div id="ruanganSeminarWrapper" style="display: none;">
+                          {{-- Ruangan Ujian --}}
+                          <label for="ruanganSeminar">Ruangan Ujian <span class="text-grey small">(opsional)</span>
+                          </label>
+                          <x-adminlte-input name="ruanganSeminar" id="ruanganSeminar"
+                              placeholder="Masukkan ruangan ujian..." value="{{ old('ruanganSeminar') }}"
+                              autocomplete="off">
+                              <x-slot name="prependSlot">
+                                  <div class="input-group-text bg-gradient-info">
+                                      <i class="fas fa-store-alt"></i>
+                                  </div>
+                              </x-slot>
+                          </x-adminlte-input>
+                      </div>
+                      <div id="linkWebinar" style="display: none;">
+                          {{-- Link Webinar --}}
+                          <label for="linkWebinar">Link Webinar</label>
+                          <x-adminlte-input name="linkWebinar" id="linkWebinar" placeholder="Masukkan link webinar..."
+                              value="{{ old('linkWebinar') }}" autocomplete="off">
+                              <x-slot name="prependSlot">
+                                  <div class="input-group-text bg-gradient-blue">
+                                      <i class="fas fa-globe"></i>
+                                  </div>
+                              </x-slot>
+                          </x-adminlte-input>
+                          <small class="text-muted">Max length: 191 characters</small>
+                      </div>
+                  </td>
+              </tr>
+              <tr>
+                  <td>
+                      {{-- NAMA PEMBIMBING 1 --}}
+                      <label for="pembimbing1">Dosen Pembimbing 1 <span class="text-red">*</span> </label>
+                      <x-adminlte-select-bs name="pembimbing1" id="pembimbing1" label-class="text-black"
+                          igroup-size="md" data-title="Pilih Dosen Pembimbing 1..." data-live-search
+                          data-style='border: 1px solid #ced4da; background-color: #fff;'
+                          data-live-search-placeholder="Cari..." data-show-tick value="{{ old('pembimbing1') }}">
+                          <x-slot name="prependSlot">
+                              <div class="input-group-text bg-gradient-dark">
+                                  <i class="fas fa-user"></i>
+                              </div>
+                          </x-slot>
+                          @foreach ($namaDosen as $dosen)
+                              <option value="{{ $dosen->id }}"
+                                  {{ old('pembimbing1') == $dosen->id ? 'selected' : '' }}>
+                                  {{ $dosen->display_name }}</option>
+                          @endforeach
+                      </x-adminlte-select-bs>
 
-@section('content')
+                      {{-- <label for="pembimbing1">Dosen Pembimbing 1 <span class="text-red">*</span></label>
+                          <x-adminlte-select name="pembimbing1" id="pembimbing1">
+                          <option value="" selected disabled hidden>Pilih Dosen Pembimbing 1</option>
+                          @foreach ($namaDosen as $dosen)
+                          <option value="{{ $dosen->id }}" {{ old('pembimbing1') == $dosen->id ? 'selected' : '' }}>{{ $dosen->display_name }}</option>
+                          @endforeach
+                          <x-slot name="prependSlot">
+                          <div class="input-group-text bg-gradient-dark">
+                                          <i class="fas fa-user"></i>
+                          </div>
+                          </x-slot>
+                          </x-adminlte-select> --}}
+                  </td>
+                  <td>
+                      {{-- NILAI PEMBIMBING 1 --}}
+                      <x-adminlte-input name="nilaiPembimbing1" label="Nilai Pembimbing 1"
+                          placeholder="Nilai Pembimbing 1" type="number" min="0" max="100"
+                          value="{{ old('nilaiPembimbing1') }}">
+                          <x-slot name="prependSlot">
+                              <div class="input-group-text bg-gradient-success">
+                                  <i class="fas fa-sort-numeric-up"></i>
+                              </div>
+                          </x-slot>
+                      </x-adminlte-input>
+                  </td>
+              </tr>
+              <tr>
+                  <td>
+                      {{-- NAMA PEMBIMBING 2 --}}
+                      <label for="pembimbing2">Dosen Pembimbing 2 <span class="text-red">*</span> </label>
+                      <x-adminlte-select-bs id="pembimbing2" name="pembimbing2" label-class="text-black"
+                          igroup-size="md" data-title="Pilih Dosen Pembimbing 2..." data-live-search
+                          data-style='border: 1px solid #ced4da; background-color: #fff;'
+                          data-live-search-placeholder="Cari..." data-show-tick value="{{ old('pembimbing2') }}">
+                          <x-slot name="prependSlot">
+                              <div class="input-group-text bg-gradient-dark">
+                                  <i class="fas fa-user"></i>
+                              </div>
+                          </x-slot>
+                          @foreach ($namaDosen as $dosen)
+                              <option value="{{ $dosen->id }}"
+                                  {{ old('pembimbing2') == $dosen->id ? 'selected' : '' }}>
+                                  {{ $dosen->display_name }}</option>
+                          @endforeach
+                      </x-adminlte-select-bs>
 
-@if ($errors->hasAny(['pembimbing1_not_found', 'pembimbing2_not_found', 'penguji1_not_found', 'penguji2_not_found']))
-    <x-adminlte-alert id="error-alert" theme="danger" title="Error">
-        @foreach(['pembimbing1_not_found', 'pembimbing2_not_found', 'penguji1_not_found', 'penguji2_not_found'] as $field)
-            @if($errors->has($field))
-                <li>{{ $errors->first($field) }}</li>
-            @endif
-        @endforeach
-    </x-adminlte-alert>
+                      {{-- <label for="pembimbing2">Dosen Pembimbing 2 <span class="text-red">*</span></label>
+                          <x-adminlte-select name="pembimbing2" id="pembimbing2">
+                          <option value="" selected disabled hidden>Pilih Dosen Pembimbing 1</option>
+                          @foreach ($namaDosen as $dosen)
+                          <option value="{{ $dosen->id }}" {{ old('pembimbing2') == $dosen->id ? 'selected' : '' }}>{{ $dosen->display_name }}</option>
+                          @endforeach
+                          <x-slot name="prependSlot">
+                          <div class="input-group-text bg-gradient-dark">
+                                          <i class="fas fa-user"></i>
+                          </div>
+                          </x-slot>
+                          </x-adminlte-select> --}}
+                  </td>
+                  <td>
+                      {{-- NILAI PEMBIMBING 2 --}}
+                      <x-adminlte-input name="nilaiPembimbing2" label="Nilai Pembimbing 2"
+                          placeholder="Nilai Pembimbing 2" type="number" min="0" max="100"
+                          value="{{ old('nilaiPembimbing2') }}">
+                          <x-slot name="prependSlot">
+                              <div class="input-group-text bg-gradient-success">
+                                  <i class="fas fa-sort-numeric-up"></i>
+                              </div>
+                          </x-slot>
+                      </x-adminlte-input>
+                  </td>
+              </tr>
+              <tr>
+                  <td>
+                      {{-- NAMA PENGUJI 1 --}}
+                      <label for="penguji1">Dosen Penguji 1 <span class="text-red">*</span> </label>
+                      <x-adminlte-select-bs id="penguji1" name="penguji1" label-class="text-black" igroup-size="md"
+                          data-title="Pilih Dosen Penguji 1..." data-live-search
+                          data-style='border: 1px solid #ced4da; background-color: #fff;'
+                          data-live-search-placeholder="Cari..." data-show-tick value="{{ old('penguji1') }}">
+                          <x-slot name="prependSlot">
+                              <div class="input-group-text bg-gradient-dark">
+                                  <i class="fas fa-user"></i>
+                              </div>
+                          </x-slot>
+                          @foreach ($namaDosen as $dosen)
+                              <option value="{{ $dosen->id }}" {{ old('penguji1') == $dosen->id ? 'selected' : '' }}>
+                                  {{ $dosen->display_name }}</option>
+                          @endforeach
+                      </x-adminlte-select-bs>
 
-    <script>
-        setTimeout(function() {
-            document.getElementById('error-alert').style.display = 'none';
-        }, 3000);
-    </script>
-@endif
+                      {{-- <label for="penguji1">Dosen Penguji 1 <span class="text-red">*</span></label>
+                          <x-adminlte-select name="penguji1" id="penguji1">
+                          <option value="" selected disabled hidden>Pilih Dosen Penguji 1</option>
+                          @foreach ($namaDosen as $dosen)
+                          <option value="{{ $dosen->id }}" {{ old('penguji1') == $dosen->id ? 'selected' : '' }}>{{ $dosen->display_name }}</option>
+                          @endforeach
+                          <x-slot name="prependSlot">
+                          <div class="input-group-text bg-gradient-dark">
+                                          <i class="fas fa-user"></i>
+                          </div>
+                          </x-slot>
+                          </x-adminlte-select> --}}
+                  </td>
+                  <td>
+                      {{-- NILAI PENGUJI 1 --}}
+                      <x-adminlte-input name="nilaiPenguji1" label="Nilai Penguji 1" placeholder="Nilai Penguji 1"
+                          type="number" min="0" max="100" value="{{ old('nilaiPenguji1') }}">
+                          <x-slot name="prependSlot">
+                              <div class="input-group-text bg-gradient-success">
+                                  <i class="fas fa-sort-numeric-up"></i>
+                              </div>
+                          </x-slot>
+                      </x-adminlte-input>
+                  </td>
+              </tr>
+              <tr>
+                  <td>
+                      {{-- NAMA PENGUJI 2 --}}
+                      <label for="penguji2">Dosen Penguji 2 <span class="text-red">*</span> </label>
+                      <x-adminlte-select-bs id="penguji2" name="penguji2" label-class="text-black" igroup-size="md"
+                          data-title="Pilih Dosen Penguji 2..." data-live-search
+                          data-style='border: 1px solid #ced4da; background-color: #fff;'
+                          data-live-search-placeholder="Cari..." data-show-tick value="{{ old('penguji2') }}">
+                          <x-slot name="prependSlot">
+                              <div class="input-group-text bg-gradient-dark">
+                                  <i class="fas fa-user"></i>
+                              </div>
+                          </x-slot>
+                          @foreach ($namaDosen as $dosen)
+                              <option value="{{ $dosen->id }}" {{ old('penguji2') == $dosen->id ? 'selected' : '' }}>
+                                  {{ $dosen->display_name }}</option>
+                          @endforeach
+                      </x-adminlte-select-bs>
+
+                      {{-- <label for="penguji2">Dosen Penguji 2 <span class="text-red">*</span></label>
+                          <x-adminlte-select name="penguji2" id="penguji2">
+                          <option value="" selected disabled hidden>Pilih Dosen Penguji 2</option>
+                          @foreach ($namaDosen as $dosen)
+                          <option value="{{ $dosen->id }}" {{ old('penguji2') == $dosen->id ? 'selected' : '' }}>{{ $dosen->display_name }}</option>
+                          @endforeach
+                          <x-slot name="prependSlot">
+                          <div class="input-group-text bg-gradient-dark">
+                                          <i class="fas fa-user"></i>
+                          </div>
+                          </x-slot>
+                          </x-adminlte-select> --}}
+                  </td>
+                  <td>
+                      {{-- NILAI PENGUJI 2 --}}
+                      <x-adminlte-input name="nilaiPenguji2" label="Nilai Penguji 2" placeholder="Nilai Penguji 2"
+                          type="number" min="0" max="100" value="{{ old('nilaiPenguji2') }}">
+                          <x-slot name="prependSlot">
+                              <div class="input-group-text bg-gradient-success">
+                                  <i class="fas fa-sort-numeric-up"></i>
+                              </div>
+                          </x-slot>
+                      </x-adminlte-input>
+                  </td>
+              </tr>
+          </table>
+
+          <br>
+          <x-adminlte-button type="submit" name="submit" label="Submit" theme="primary"
+              style="float: left; width: 20%;" />
+      </form>
+  @stop
+
+  @push('js')
+      <script>
+          $(document).ready(function() {
+              $('#pendaftarSemhasSelect').change(function() {
+                  var pendaftarId = $(this).val();
+                  if (pendaftarId) {
+                      // Assuming you have an endpoint to fetch data for a specific pendaftar ID
+                      var apiUrl = '/api/seminar_hasil/daftar/detail/' + pendaftarId;
 
 
-<form action="{{ route('store.nilai.seminar.hasil')}}" method="POST">
-    @csrf
-    <label for="pendaftarSemhasSelect">Data Mahasiswa <span class="text-red">*</span> </label>
-    <x-adminlte-select-bs name="pendaftarSemhasSelect" label-class="text-black"
-        igroup-size="md" data-title="Pilih Mahasiswa..." data-live-search data-style='border: 1px solid #ced4da; background-color: #fff;'
-        data-live-search-placeholder="Cari..." data-show-tick value="{{ old('pendaftarSemhasSelect') }}">
-        <x-slot name="prependSlot">
-            <div class="input-group-text bg-gradient-info">
-                <i class="fas fa-id-card"></i>
-            </div>
-        </x-slot>
-        @if (count($pendaftarSemhas) == 0)
-            <option value="" disabled>Tidak ada data mahasiswa pendaftar seminar hasil</option>
-        @else
-            @foreach ($pendaftarSemhas as $data)
-                <option value="{{ $data->id }}" {{ old('pendaftarSemhasSelect') == $data->id ? 'selected' : '' }}>
-                    {{ $data->waktu_seminar }}, {{ $data->mahasiswa->nim_nip_nidn }} - {{ $data->mahasiswa->name }}
-                </option>
-            @endforeach
-        @endif
-    </x-adminlte-select-bs>
 
-    {{-- <x-adminlte-select id="pendaftarSemhasSelect" name="pendaftarSemhasSelect" label="Data Mahasiswa">
-        <x-slot name="prependSlot">
-            <div class="input-group-text bg-gradient-info">
-                <i class="fas fa-id-card"></i>
-            </div>
-        </x-slot>
-        <option value="" selected disabled hidden>Pilih Pendaftar</option>
-        @if (count($pendaftarSemhas) == 0)
-            <option value="" disabled>Tidak ada data mahasiswa pendaftar seminar hasil</option>
-        @else
-            @foreach ($pendaftarSemhas as $data)
-                <option value="{{ $data->id }}" {{ old('pendaftarSemhasSelect') == $data->id ? 'selected' : '' }}>
-                    {{ $data->waktu_seminar }}, {{ $data->mahasiswa->nim_nip_nidn }} - {{ $data->mahasiswa->name }}
-                </option>
-            @endforeach
-        @endif
-    </x-adminlte-select> --}}
-    <input id="pendaftarSemhasId" type="hidden" name="pendaftarSemhasId" value="">
+                      // Make an AJAX request to fetch the data
+                      $.get(apiUrl, function(data) {
 
-    <table style=" background-color: transparent;">
-        <tr>
-            <td>
-                {{-- NAMA MAHASISWA --}}
-                <label for="nama_mahasiswa">Nama Mahasiswa <span class="text-red">*</span></label>
-                <x-adminlte-input name="nama_mahasiswa" id="nama_mahasiswa" placeholder="Nama Mahasiswa" value="{{ old('nama_mahasiswa') }}" autocomplete="off" disabled>
-                    <x-slot name="prependSlot">
-                        <div class="input-group-text bg-gradient-info">
-                            <i class="fas fa-user"></i>
-                        </div>
-                    </x-slot>
-                </x-adminlte-input>
-            </td>
-            <td>
-                {{-- NIM --}}
-                <label for="nim">Nomor Induk Mahasiswa <span class="text-red">*</span></label>
-                <x-adminlte-input name="nim" id="nim" placeholder="Nomor Induk Mahasiswa" type="number" value="{{ old('nim') }}" autocomplete="off" disabled>
-                    <x-slot name="prependSlot">
-                        <div class="input-group-text bg-gradient-info">
-                            <i class="fas fa-address-card"></i>
-                        </div>
-                    </x-slot>
-                </x-adminlte-input>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                {{-- Judul Skripsi --}}
-                <label for="judulSkripsi">Judul Tugas Akhir <span class="text-red">*</span></label>
-                <x-adminlte-input name="judulSkripsi" id="judulSkripsi" placeholder="Masukkan judul skripsi..."  value="{{ old('judulSkripsi') }}" autocomplete="off">
-                    <x-slot name="prependSlot">
-                        <div class="input-group-text bg-gradient-info">
-                            <i class="fas fa-pen"></i>
-                        </div>
-                    </x-slot>
-                </x-adminlte-input>
-            </td>
-            <td>
-                {{-- Tanggal Seminar --}}
-                <label for="tanggalSeminar">Tanggal Seminar <span class="text-red">*</span></label>
-                <x-adminlte-input-date name="tanggalSeminar" id="tanggalSeminar" :config="$config" placeholder="Pilih tanggal seminar..." value="{{ old('tanggalSeminar') }}" autocomplete="off">
-                    <x-slot name="prependSlot">
-                        <div class="input-group-text bg-gradient-danger">
-                            <i class="fas fa-calendar-alt"></i>
-                        </div>
-                    </x-slot>
-                </x-adminlte-input-date>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <label for="tipeUjian">Tipe Ujian <span class="text-red">*</span></label>
-                <x-adminlte-select name="tipeUjian" id="tipeUjian">
-                    <option value="" selected disabled hidden>Pilih Tipe Ujian</option>
-                    <option value="online" {{ old('tipeUjian') == 'online' ? 'selected' : '' }}>Online</option>
-                    <option value="offline" {{ old('tipeUjian') == 'offline' ? 'selected' : '' }}>Offline</option>
-                    <x-slot name="prependSlot">
-                        <div class="input-group-text bg-gradient-purple">
-                            <i class="fas fa-list"></i>
-                        </div>
-                    </x-slot>
-                </x-adminlte-select>
-            </td>
-            <td>
-                @php
-                    $configJam = ['format' => 'HH:mm'];
-                @endphp
-                {{-- Jam Seminar --}}
-                <label for="jamSeminar">Jam Seminar</label>
-                <x-adminlte-input-date name="jamSeminar" id="jamSeminar" :config="$configJam" placeholder="Pilih jam seminar..." value="{{ old('jamSeminar') }}" autocomplete="off">
-                    <x-slot name="prependSlot">
-                        <div class="input-group-text bg-gradient-cyan">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                    </x-slot>
-                </x-adminlte-input-date>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <div id="ruanganSeminar" style="display: none;">
-                    {{-- Ruangan Ujian --}}
-                    <label for="ruanganSeminar">Ruangan Ujian <span class="text-grey small">(opsional)</span> </label>
-                    <x-adminlte-input name="ruanganSeminar" id="ruanganSeminar" placeholder="Masukkan ruangan ujian..."  value="{{ old('ruanganSeminar') }}" autocomplete="off">
-                        <x-slot name="prependSlot">
-                            <div class="input-group-text bg-gradient-info">
-                                <i class="fas fa-store-alt"></i>
-                            </div>
-                        </x-slot>
-                    </x-adminlte-input>
-                </div>
-                <div id="linkWebinar" style="display: none;">
-                    {{-- Link Webinar --}}
-                    <label for="linkWebinar">Link Webinar</label>
-                    <x-adminlte-input name="linkWebinar" id="linkWebinar" placeholder="Masukkan link webinar..."  value="{{ old('linkWebinar') }}" autocomplete="off">
-                        <x-slot name="prependSlot">
-                            <div class="input-group-text bg-gradient-blue">
-                                <i class="fas fa-globe"></i>
-                            </div>
-                        </x-slot>
-                    </x-adminlte-input>
-                    <small class="text-muted">Max length: 191 characters</small>
-                </div>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                {{-- NAMA PEMBIMBING 1 --}}
-                <label for="pembimbing1">Dosen Pembimbing 1 <span class="text-red">*</span> </label>
-                <x-adminlte-select-bs name="pembimbing1" label-class="text-black"
-                    igroup-size="md" data-title="Pilih Dosen Pembimbing 1..." data-live-search data-style='border: 1px solid #ced4da; background-color: #fff;'
-                    data-live-search-placeholder="Cari..." data-show-tick value="{{ old('pembimbing1') }}">
-                    <x-slot name="prependSlot">
-                        <div class="input-group-text bg-gradient-dark">
-                            <i class="fas fa-user"></i>
-                        </div>
-                    </x-slot>
-                    @foreach ($namaDosen as $dosen)
-                        <option value="{{ $dosen->id }}" {{ old('pembimbing1') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option>
-                    @endforeach
-                </x-adminlte-select-bs>
+                          // Update the content of the table cells with the fetched data
+                          $('#pendaftarSemhasId').val(data.pendaftaranSemhas.mahasiswa.id)
+                          $('#nama_mahasiswa').val(data.pendaftaranSemhas.mahasiswa.name)
+                          $('#nim').val(data.pendaftaranSemhas.mahasiswa.nim_nip_nidn)
 
-                {{-- <label for="pembimbing1">Dosen Pembimbing 1 <span class="text-red">*</span></label>
-                <x-adminlte-select name="pembimbing1" id="pembimbing1">
-                    <option value="" selected disabled hidden>Pilih Dosen Pembimbing 1</option>
-                    @foreach ($namaDosen as $dosen)
-                        <option value="{{ $dosen->id }}" {{ old('pembimbing1') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option>
-                    @endforeach
-                    <x-slot name="prependSlot">
-                        <div class="input-group-text bg-gradient-dark">
-                            <i class="fas fa-user"></i>
-                        </div>
-                    </x-slot>
-                </x-adminlte-select> --}}
-            </td>
-            <td>
-                {{-- NILAI PEMBIMBING 1 --}}
-                <x-adminlte-input name="nilaiPembimbing1" label="Nilai Pembimbing 1" placeholder="Nilai Pembimbing 1" type="number" min="0" max="100" value="{{ old('nilaiPembimbing1') }}">
-                    <x-slot name="prependSlot">
-                        <div class="input-group-text bg-gradient-success">
-                            <i class="fas fa-sort-numeric-up"></i>
-                        </div>
-                    </x-slot>
-                </x-adminlte-input>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                {{-- NAMA PEMBIMBING 2 --}}
-                <label for="pembimbing2">Dosen Pembimbing 2 <span class="text-red">*</span> </label>
-                <x-adminlte-select-bs name="pembimbing2" label-class="text-black"
-                    igroup-size="md" data-title="Pilih Dosen Pembimbing 2..." data-live-search data-style='border: 1px solid #ced4da; background-color: #fff;'
-                    data-live-search-placeholder="Cari..." data-show-tick value="{{ old('pembimbing2') }}">
-                    <x-slot name="prependSlot">
-                        <div class="input-group-text bg-gradient-dark">
-                            <i class="fas fa-user"></i>
-                        </div>
-                    </x-slot>
-                    @foreach ($namaDosen as $dosen)
-                        <option value="{{ $dosen->id }}" {{ old('pembimbing2') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option>
-                    @endforeach
-                </x-adminlte-select-bs>
+                          $('#judulSkripsi').val(data.pendaftaranSemhas.judul_skripsi)
+                          var tanggalSeminar = data.pendaftaranSemhas.waktu_seminar.split(' ')[0];
+                          $('#tanggalSeminar').val(tanggalSeminar)
+                          var timeParts = data.pendaftaranSemhas.waktu_seminar.split(' ')[1].split(
+                              ':');
+                          var jam = timeParts[0] + ':' + timeParts[1];
+                          $('#jamSeminar').val(jam);
 
-                {{-- <label for="pembimbing2">Dosen Pembimbing 2 <span class="text-red">*</span></label>
-                <x-adminlte-select name="pembimbing2" id="pembimbing2">
-                    <option value="" selected disabled hidden>Pilih Dosen Pembimbing 1</option>
-                    @foreach ($namaDosen as $dosen)
-                        <option value="{{ $dosen->id }}" {{ old('pembimbing2') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option>
-                    @endforeach
-                    <x-slot name="prependSlot">
-                        <div class="input-group-text bg-gradient-dark">
-                            <i class="fas fa-user"></i>
-                        </div>
-                    </x-slot>
-                </x-adminlte-select> --}}
-            </td>
-            <td>
-                {{-- NILAI PEMBIMBING 2 --}}
-                <x-adminlte-input name="nilaiPembimbing2" label="Nilai Pembimbing 2" placeholder="Nilai Pembimbing 2" type="number" min="0" max="100" value="{{ old('nilaiPembimbing2') }}">
-                    <x-slot name="prependSlot">
-                        <div class="input-group-text bg-gradient-success">
-                            <i class="fas fa-sort-numeric-up"></i>
-                        </div>
-                    </x-slot>
-                </x-adminlte-input>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                {{-- NAMA PENGUJI 1 --}}
-                <label for="penguji1">Dosen Penguji 1 <span class="text-red">*</span> </label>
-                <x-adminlte-select-bs name="penguji1" label-class="text-black"
-                    igroup-size="md" data-title="Pilih Dosen Penguji 1..." data-live-search data-style='border: 1px solid #ced4da; background-color: #fff;'
-                    data-live-search-placeholder="Cari..." data-show-tick value="{{ old('penguji1') }}">
-                    <x-slot name="prependSlot">
-                        <div class="input-group-text bg-gradient-dark">
-                            <i class="fas fa-user"></i>
-                        </div>
-                    </x-slot>
-                    @foreach ($namaDosen as $dosen)
-                        <option value="{{ $dosen->id }}" {{ old('penguji1') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option>
-                    @endforeach
-                </x-adminlte-select-bs>
+                          $('#pembimbing1')
+                              .val(data.pendaftaranSemhas.pembimbing1?.id ?? '')
+                              .selectpicker('refresh');
+                          // PEMBIMBING 2
+                          $('#pembimbing2')
+                              .val(data.pendaftaranSemhas.pembimbing2?.id ?? '')
+                              .selectpicker('refresh');
 
-                {{-- <label for="penguji1">Dosen Penguji 1 <span class="text-red">*</span></label>
-                <x-adminlte-select name="penguji1" id="penguji1">
-                    <option value="" selected disabled hidden>Pilih Dosen Penguji 1</option>
-                    @foreach ($namaDosen as $dosen)
-                        <option value="{{ $dosen->id }}" {{ old('penguji1') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option>
-                    @endforeach
-                    <x-slot name="prependSlot">
-                        <div class="input-group-text bg-gradient-dark">
-                            <i class="fas fa-user"></i>
-                        </div>
-                    </x-slot>
-                </x-adminlte-select> --}}
-            </td>
-            <td>
-                {{-- NILAI PENGUJI 1 --}}
-                <x-adminlte-input name="nilaiPenguji1" label="Nilai Penguji 1" placeholder="Nilai Penguji 1" type="number" min="0" max="100" value="{{ old('nilaiPenguji1') }}">
-                    <x-slot name="prependSlot">
-                        <div class="input-group-text bg-gradient-success">
-                            <i class="fas fa-sort-numeric-up"></i>
-                        </div>
-                    </x-slot>
-                </x-adminlte-input>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                {{-- NAMA PENGUJI 2 --}}
-                <label for="penguji2">Dosen Penguji 2 <span class="text-red">*</span> </label>
-                <x-adminlte-select-bs name="penguji2" label-class="text-black"
-                    igroup-size="md" data-title="Pilih Dosen Penguji 2..." data-live-search data-style='border: 1px solid #ced4da; background-color: #fff;'
-                    data-live-search-placeholder="Cari..." data-show-tick value="{{ old('penguji2') }}">
-                    <x-slot name="prependSlot">
-                        <div class="input-group-text bg-gradient-dark">
-                            <i class="fas fa-user"></i>
-                        </div>
-                    </x-slot>
-                    @foreach ($namaDosen as $dosen)
-                        <option value="{{ $dosen->id }}" {{ old('penguji2') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option>
-                    @endforeach
-                </x-adminlte-select-bs>
+                          // PENGUJI 1
+                          $('#penguji1')
+                              .val(data.pendaftaranSemhas.calon_penguji1?.id ?? '')
+                              .selectpicker('refresh');
 
-                {{-- <label for="penguji2">Dosen Penguji 2 <span class="text-red">*</span></label>
-                <x-adminlte-select name="penguji2" id="penguji2">
-                    <option value="" selected disabled hidden>Pilih Dosen Penguji 2</option>
-                    @foreach ($namaDosen as $dosen)
-                        <option value="{{ $dosen->id }}" {{ old('penguji2') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option>
-                    @endforeach
-                    <x-slot name="prependSlot">
-                        <div class="input-group-text bg-gradient-dark">
-                            <i class="fas fa-user"></i>
-                        </div>
-                    </x-slot>
-                </x-adminlte-select> --}}
-            </td>
-            <td>
-                {{-- NILAI PENGUJI 2 --}}
-                <x-adminlte-input name="nilaiPenguji2" label="Nilai Penguji 2" placeholder="Nilai Penguji 2" type="number" min="0" max="100" value="{{ old('nilaiPenguji2') }}">
-                    <x-slot name="prependSlot">
-                        <div class="input-group-text bg-gradient-success">
-                            <i class="fas fa-sort-numeric-up"></i>
-                        </div>
-                    </x-slot>
-                </x-adminlte-input>
-            </td>
-        </tr>
-    </table>
+                          // PENGUJI 2
+                          $('#penguji2')
+                              .val(data.pendaftaranSemhas.calon_penguji2?.id ?? '')
+                              .selectpicker('refresh');
+                      })
+                  } else {
+                      // If no pendaftar is selected, reset the content to "None"
+                      $('#pendaftarSemhasId').val('')
+                      $('#nama_mahasiswa').val('')
+                      $('#nim').val('')
+                      $('#judulSkripsi').val('')
+                      $('#tanggalSeminar').val('')
+                      $('#jamSeminar').val('')
+                      $('#pembimbing1').html(
+                          '<option value="" selected disabled hidden>Pilih Dosen Pembimbing 1</option>@foreach ($namaDosen as $dosen) <option value="{{ $dosen->id }}" {{ old('pembimbing1') == $dosen->id ? 'selected' : '' }}>{{ $dosen->display_name }}</option> @endforeach'
+                      )
+                      $('#pembimbing2').html(
+                          '<option value="" selected disabled hidden>Pilih Dosen Pembimbing 2</option>@foreach ($namaDosen as $dosen) <option value="{{ $dosen->id }}" {{ old('pembimbing2') == $dosen->id ? 'selected' : '' }}>{{ $dosen->display_name }}</option> @endforeach'
+                      )
+                      $('#penguji1').html(
+                          '<option value="" selected disabled hidden>Pilih Dosen Penguji 1</option>@foreach ($namaDosen as $dosen) <option value="{{ $dosen->id }}" {{ old('penguji1') == $dosen->id ? 'selected' : '' }}>{{ $dosen->display_name }}</option> @endforeach'
+                      )
+                      $('#penguji2').html(
+                          '<option value="" selected disabled hidden>Pilih Dosen Penguji 2</option>@foreach ($namaDosen as $dosen) <option value="{{ $dosen->id }}" {{ old('penguji2') == $dosen->id ? 'selected' : '' }}>{{ $dosen->display_name }}</option> @endforeach'
+                      )
+                  }
+              });
+              var oldValue = "{{ old('pendaftarSemhasSelect') }}";
+              if (oldValue) {
+                  $('#pendaftarSemhasSelect').val(oldValue).change();
+              }
 
-    <br>
-    <x-adminlte-button type="submit" name="submit" label="Submit" theme="primary" style="float: left; width: 20%;"/>
-</form>
-@stop
+              $('#tipeUjian').change(function() {
+                  var selectedType = $(this).val();
+                  if (selectedType === 'online') {
+                      $('#linkWebinar').show();
+                      $('#ruanganSeminarWrapper').hide();
+                  } else if (selectedType === 'offline') {
+                      $('#linkWebinar').hide();
+                      $('#ruanganSeminarWrapper').show();
+                  } else {
+                      $('#linkWebinar').hide();
+                      $('#ruanganSeminarWrapper').hide();
+                  }
+              });
+              var oldTypeValue = "{{ old('tipeUjian') }}";
+              if (oldTypeValue) {
+                  $('#tipeUjian').val(oldTypeValue).change();
+              }
+          });
+      </script>
+  @endpush
 
-@push('js')
-    <script>
-        $(document).ready(function() {
-            $('#pendaftarSemhasSelect').change(function() {
-                var pendaftarId = $(this).val();
-                if (pendaftarId) {
-                    // Assuming you have an endpoint to fetch data for a specific pendaftar ID
-                    var apiUrl = '/api/seminar_hasil/daftar/detail/' + pendaftarId;
-
-                    console.log(apiUrl);
-                    // Make an AJAX request to fetch the data
-                    $.get(apiUrl, function(data) {
-                        // Update the content of the table cells with the fetched data
-                        $('#pendaftarSemhasId').val(data.pendaftaranSemhas.mahasiswa.id)
-                        $('#nama_mahasiswa').val(data.pendaftaranSemhas.mahasiswa.name)
-                        $('#nim').val(data.pendaftaranSemhas.mahasiswa.nim_nip_nidn)
-
-                        $('#judulSkripsi').val(data.pendaftaranSemhas.judul_skripsi)
-                        var tanggalSeminar = data.pendaftaranSemhas.waktu_seminar.split(' ')[0];
-                        $('#tanggalSeminar').val(tanggalSeminar)
-                        var timeParts = data.pendaftaranSemhas.waktu_seminar.split(' ')[1].split(':');
-                        var jam = timeParts[0] + ':' + timeParts[1];
-                        $('#jamSeminar').val(jam);
-
-                        $('#pembimbing1').html('<option value="'+data.pendaftaranSemhas.pembimbing1.id+'" selected hidden>'+data.pendaftaranSemhas.pembimbing1.name+'</option>@foreach ($namaDosen as $dosen) <option value="{{ $dosen->id }}" {{ old('pembimbing1') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option> @endforeach')
-                        $('#pembimbing2').html('<option value="'+data.pendaftaranSemhas.pembimbing2.id+'" selected hidden>'+data.pendaftaranSemhas.pembimbing2.name+'</option>@foreach ($namaDosen as $dosen) <option value="{{ $dosen->id }}" {{ old('pembimbing2') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option> @endforeach')
-
-                        if (data.pendaftaranSemhas.calon_penguji1) {
-                            $('#penguji1').html('<option value="'+data.pendaftaranSemhas.calon_penguji1.id+'" selected hidden>'+data.pendaftaranSemhas.calon_penguji1.name+'</option>@foreach ($namaDosen as $dosen) <option value="{{ $dosen->id }}" {{ old('penguji1') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option> @endforeach')
-                        } else {
-                            $('#penguji1').html('<option value="" selected disabled hidden>Pilih Dosen Penguji 1</option>@foreach ($namaDosen as $dosen) <option value="{{ $dosen->id }}" {{ old('penguji1') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option> @endforeach')
-                        }
-
-                        if (data.pendaftaranSemhas.calon_penguji2) {
-                            $('#penguji2').html('<option value="'+data.pendaftaranSemhas.calon_penguji2.id+'" selected hidden>'+data.pendaftaranSemhas.calon_penguji2.name+'</option>@foreach ($namaDosen as $dosen) <option value="{{ $dosen->id }}" {{ old('penguji2') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option> @endforeach')
-                        } else {
-                            $('#penguji2').html('<option value="" selected disabled hidden>Pilih Dosen Penguji 2</option>@foreach ($namaDosen as $dosen) <option value="{{ $dosen->id }}" {{ old('penguji2') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option> @endforeach')
-                        }
-                    })
-                } else {
-                    // If no pendaftar is selected, reset the content to "None"
-                    $('#pendaftarSemhasId').val('')
-                    $('#nama_mahasiswa').val('')
-                    $('#nim').val('')
-                    $('#judulSkripsi').val('')
-                    $('#tanggalSeminar').val('')
-                    $('#jamSeminar').val('')
-                    $('#pembimbing1').html('<option value="" selected disabled hidden>Pilih Dosen Pembimbing 1</option>@foreach ($namaDosen as $dosen) <option value="{{ $dosen->id }}" {{ old('pembimbing1') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option> @endforeach')
-                    $('#pembimbing2').html('<option value="" selected disabled hidden>Pilih Dosen Pembimbing 2</option>@foreach ($namaDosen as $dosen) <option value="{{ $dosen->id }}" {{ old('pembimbing2') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option> @endforeach')
-                    $('#penguji1').html('<option value="" selected disabled hidden>Pilih Dosen Penguji 1</option>@foreach ($namaDosen as $dosen) <option value="{{ $dosen->id }}" {{ old('penguji1') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option> @endforeach')
-                    $('#penguji2').html('<option value="" selected disabled hidden>Pilih Dosen Penguji 2</option>@foreach ($namaDosen as $dosen) <option value="{{ $dosen->id }}" {{ old('penguji2') == $dosen->id ? 'selected' : '' }}>{{ $dosen->name }}</option> @endforeach')
-                }
-            });
-            var oldValue = "{{ old('pendaftarSemhasSelect') }}";
-            if (oldValue) {
-                $('#pendaftarSemhasSelect').val(oldValue).change();
-            }
-
-            $('#tipeUjian').change(function() {
-                var selectedType = $(this).val();
-                if (selectedType === 'online') {
-                    $('#linkWebinar').show();
-                    $('#ruanganSeminar').hide();
-                } else if (selectedType === 'offline') {
-                    $('#linkWebinar').hide();
-                    $('#ruanganSeminar').show();
-                } else {
-                    $('#linkWebinar').hide();
-                    $('#ruanganSeminar').hide();
-                }
-            });
-            var oldTypeValue = "{{ old('tipeUjian') }}";
-            if (oldTypeValue) {
-                $('#tipeUjian').val(oldTypeValue).change();
-            }
-        });
-    </script>
-@endpush
-
-@section('css')
-    <link rel="stylesheet" href="/css/styles.css">
-@stop
-
+  @section('css')
+      <link rel="stylesheet" href="/css/styles.css">
+  @stop

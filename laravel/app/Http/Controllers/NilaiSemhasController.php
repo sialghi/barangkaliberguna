@@ -49,99 +49,86 @@ class NilaiSemhasController extends Controller
     {
         $user = Auth::user();
         $userId = $user->id;
-        $userRole = $user->roles->pluck('nama')->toArray();
-        $userPivot = UsersPivot::where('id_user', $user->id)->with('role', 'programStudi', 'fakultas')->orderBy('id_role', 'desc')->get();
 
+        // 1. Optimalkan pengambilan role & pivot dengan Eager Loading
+        $userPivot = UsersPivot::where('id_user', $userId)
+            ->with(['role', 'programStudi', 'fakultas.programStudi'])
+            ->orderBy('id_role', 'desc')
+            ->get();
+
+        $userRole = $user->roles->pluck('nama')->toArray();
         $data = collect();
         $namaDosen = collect();
+
+        // 2. Daftar relasi NilaiSemhas yang wajib di-load agar View tidak query ulang
+        $nilaiRelations = [
+            'mahasiswa.programStudi',
+            'mahasiswa.fakultas',
+            'pembimbing1',
+            'pembimbing2',
+            'penguji1',
+            'penguji2',
+        ];
 
         foreach ($userPivot as $pivot) {
             $role = $pivot->role->nama;
             $programStudiId = $pivot->id_program_studi;
             $fakultasId = $pivot->id_fakultas;
 
-            // If user has the role of Dekan, Wadek_Satu, Wadek_Dua, Wadek_Tiga, or Admin_Dekanat
+            // Inisialisasi base query dengan eager loading
+            $queryNilai = NilaiSemhas::with($nilaiRelations);
+
             if (in_array($role, ['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'])) {
-                $nilaiSemhas = NilaiSemhas::whereHas('mahasiswa.fakultas', function ($query) use ($fakultasId) {
-                    $query->where('fakultas.id', $fakultasId); // Adjust based on your column name
-                })->get()->reject(function ($item) {
-                    return is_null($item->mahasiswa); // Remove items where mahasiswa is null
-                });
-                $nilaiSemhas->each(function ($item) {
-                    $item->role = 'admin';
-                });
+                $nilaiSemhas = $queryNilai->whereHas('mahasiswa.fakultas', function ($q) use ($fakultasId) {
+                    $q->where('fakultas.id', $fakultasId);
+                })->get();
+                $currentRole = 'admin';
 
-                // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function ($query) {
-                    $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('fakultas', function ($query) use ($fakultasId) {
-                    $query->where('fakultas.id', $fakultasId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
+                $dosen = User::whereHas('roles', fn($q) => $q->where('nama', 'dosen'))
+                    ->whereHas('fakultas', fn($q) => $q->where('fakultas.id', $fakultasId))
+                    ->select('id', 'name')->without(['pivot', 'roles'])->get();
+            } else if (in_array($role, ['kaprodi', 'sekprodi', 'admin_prodi'])) {
+                $nilaiSemhas = $queryNilai->whereHas('mahasiswa.programStudi', function ($q) use ($programStudiId) {
+                    $q->where('program_studi.id', $programStudiId);
+                })->get();
+                $currentRole = 'admin';
 
-                $pivot->fakultas->programStudi;
-            }
-            // If user has the role of Kaprodi, Sekprodi, and Admin_Prodi
-            else if (in_array($role, ['kaprodi', 'sekprodi', 'admin_prodi'])) {
-                $nilaiSemhas = NilaiSemhas::whereHas('mahasiswa.programStudi', function ($query) use ($programStudiId) {
-                    $query->where('program_studi.id', $programStudiId); // Adjust based on your column name
-                })->get()->reject(function ($item) {
-                    return is_null($item->mahasiswa); // Remove items where mahasiswa is null
-                });
-                $nilaiSemhas->each(function ($item) {
-                    $item->role = 'admin';
-                });
-
-                // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function ($query) {
-                    $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function ($query) use ($programStudiId) {
-                    $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
-            }
-            // If user has the role of Dosen
-            else if (in_array($role, ['dosen'])) {
-                $nilaiSemhas = NilaiSemhas::where(function ($query) use ($userId) {
-                    $query->Where("id_pembimbing_1", $userId)
+                $dosen = User::whereHas('roles', fn($q) => $q->where('nama', 'dosen'))
+                    ->whereHas('programStudi', fn($q) => $q->where('program_studi.id', $programStudiId))
+                    ->select('id', 'name')->without(['pivot', 'roles'])->get();
+            } else if ($role === 'dosen') {
+                $nilaiSemhas = $queryNilai->where(function ($q) use ($userId) {
+                    $q->where("id_pembimbing_1", $userId)
                         ->orWhere("id_pembimbing_2", $userId)
                         ->orWhere("id_penguji_1", $userId)
                         ->orWhere("id_penguji_2", $userId);
-                })->get()->reject(function ($item) {
-                    return is_null($item->mahasiswa); // Remove items where mahasiswa is null
-                });
-                $nilaiSemhas->each(function ($item) {
-                    $item->role = 'dosen';
-                });
+                })->get();
+                $currentRole = 'dosen';
 
-                // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function ($query) {
-                    $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function ($query) use ($programStudiId) {
-                    $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
-            }
-            // If user has the role of Mahasiswa
-            else if (in_array($role, ['mahasiswa'])) {
-                $nilaiSemhas = NilaiSemhas::where('id_mahasiswa', $userId)->get();
-                $nilaiSemhas->each(function ($item) {
-                    $item->role = 'mahasiswa';
-                });
+                $dosen = User::whereHas('roles', fn($q) => $q->where('nama', 'dosen'))
+                    ->whereHas('programStudi', fn($q) => $q->where('program_studi.id', $programStudiId))
+                    ->select('id', 'name')->without(['pivot', 'roles'])->get();
+            } else if ($role === 'mahasiswa') {
+                $nilaiSemhas = $queryNilai->where('id_mahasiswa', $userId)->get();
+                $currentRole = 'mahasiswa';
 
-                // Get the name of the dosen in the same program studi as the current user
-                $dosen = User::whereHas('roles', function ($query) {
-                    $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function ($query) use ($programStudiId) {
-                    $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
+                $dosen = User::whereHas('roles', fn($q) => $q->where('nama', 'dosen'))
+                    ->whereHas('programStudi', fn($q) => $q->where('program_studi.id', $programStudiId))
+                    ->select('id', 'name')->without(['pivot', 'roles'])->get();
             }
 
-            // Merge the fetched daftarSemhas with the existing data collection
+            // 3. Bersihkan data null & set role menggunakan Collection power agar lebih cepat
+            $nilaiSemhas = $nilaiSemhas->reject(fn($item) => is_null($item->mahasiswa))
+                ->each(function ($item) use ($currentRole) {
+                    $item->role = $currentRole;
+                });
+
             $data = $data->merge($nilaiSemhas);
             $namaDosen = $namaDosen->merge($dosen);
         }
 
-        // Sort data by 'role' to prioritize higher role and make it unique by 'id'
-        $data = $data->sortBy('role')->unique('id');
-        $data = $data->sortBy('created_at');
+        // 4. Finalisasi: Unikkan data dan Sorting sesuai permintaan asli
+        $data = $data->sortBy('role')->unique('id')->sortBy('created_at');
         $namaDosen = $namaDosen->sortBy('name')->unique('id');
 
         return view('pages/semhas/nilai_seminar_hasil', compact('data', 'user', 'userRole', 'namaDosen', 'userPivot'));
@@ -185,7 +172,9 @@ class NilaiSemhasController extends Controller
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
                 })->whereHas('fakultas', function ($query) use ($fakultasId) {
                     $query->where('fakultas.id', $fakultasId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
+                })->with(['programStudi' => function ($query2) {
+                    $query2->select('id_program_studi', 'nama');
+                }])->select('id', 'name')->without(['pivot', 'roles'])->get();
 
                 $namaDosen = $namaDosen->merge($dosen);
 
@@ -207,9 +196,9 @@ class NilaiSemhasController extends Controller
                 // Fetch dosen's name from the same program studi as the current user
                 $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function ($query) use ($programStudiId) {
-                    $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
+                })->with(['programStudi' => function ($query2) {
+                    $query2->select('id_program_studi', 'nama');
+                }])->select('id', 'name')->without(['pivot', 'roles'])->get();
 
                 $namaDosen = $namaDosen->merge($dosen);
 
@@ -248,7 +237,21 @@ class NilaiSemhasController extends Controller
             // }
         }
 
-        $namaDosen = $namaDosen->sortBy('name')->unique('id');
+        // $namaDosen = $namaDosen->sortBy('name')->unique('id');
+        $namaDosen = $namaDosen->unique('id')->map(function ($item) {
+            $prodi = $item->programStudi->first()->nama ?? 'No Prodi';
+            $item->display_name = $item->name . ' - ' . $prodi;
+            return $item;
+        })->sortBy([
+            [
+                'prodi',
+                'asc'
+            ],
+            [
+                'name',
+                'asc'
+            ]
+        ]);
 
         return view('pages/semhas/nilai_seminar_hasil_add', compact('user', 'userRole', 'userPivot', 'namaDosen', 'pendaftarSemhas'));
     }
