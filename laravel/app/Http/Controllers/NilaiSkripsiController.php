@@ -181,8 +181,9 @@ class NilaiSkripsiController extends Controller
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
                 })->whereHas('fakultas', function ($query) use ($fakultasId) {
                     $query->where('fakultas.id', $fakultasId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
-
+                })->with(['programStudi'  => function ($q) {
+                    $q->select('program_studi.id', 'nama');
+                }])->select('id', 'name')->without(['pivot', 'roles'])->get();
                 $namaDosen = $namaDosen->merge($dosen);
 
                 $nilaiSkripsi = NilaiSkripsi::with('pendaftaranSemhas')->whereHas('mahasiswa.fakultas', function ($query) use ($fakultasId) {
@@ -203,10 +204,9 @@ class NilaiSkripsiController extends Controller
                 // Fetch dosen's name from the same program studi as the current user
                 $dosen = User::whereHas('roles', function ($query) {
                     $query->where('nama', 'dosen'); // Checking for 'dosen' role
-                })->whereHas('programStudi', function ($query) use ($programStudiId) {
-                    $query->where('program_studi.id', $programStudiId); // Filter by the same program studi as the current user
-                })->select('id', 'name')->without(['pivot', 'roles'])->get();
-
+                })->with(['programStudi' => function ($query2) {
+                    $query2->select('program_studi.id', 'nama');
+                }])->select('id', 'name')->without(['pivot', 'roles'])->get();
                 $namaDosen = $namaDosen->merge($dosen);
 
                 $nilaiSkripsi = NilaiSkripsi::with('pendaftaranSkripsi')->whereHas('mahasiswa.programStudi', function ($query) use ($programStudiId) {
@@ -248,9 +248,15 @@ class NilaiSkripsiController extends Controller
             //     ->get();
             // }
         }
-
-        $namaDosen = $namaDosen->sortBy('name')->unique('id');
-
+        $namaDosen = $namaDosen->unique('id')->map(function ($item,) {
+            $prodi = $item->programStudi->first()->nama ?? 'No Prodi';
+            $item->nama_prodi_sort = $prodi;
+            $item->display_name = $item->name . " - " . $prodi;
+            return $item;
+        })->sortBy([
+            ['nama_prodi_sort', 'asc'],
+            ['name', 'asc']
+        ]);
         return view('pages/skripsi/nilai_skripsi_add', compact('user', 'userRole', 'userPivot', 'namaDosen', 'pendaftarSkripsi'));
     }
 
