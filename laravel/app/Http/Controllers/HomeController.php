@@ -34,22 +34,19 @@ class HomeController extends Controller
         $user = Auth::user();
         $userRole = $user->roles->pluck('nama')->toArray();
 
-        // Urutkan role user berdasarkan prioritas
         usort($userRole, function ($a, $b) use ($priority) {
             return ($priority[$a] ?? 99) <=> ($priority[$b] ?? 99);
         });
 
-        // Ambil data Pivot User
         $userPivot = UsersPivot::where('id_user', $user->id)
             ->with('role', 'programStudi', 'fakultas')
             ->orderBy('id_role', 'desc')
             ->get();
 
-        // 2. Inisialisasi Default Variable
+        // 2. Inisialisasi Default
         $compactData = [
             'userRole' => $userRole,
             'userPivot' => $userPivot,
-            // Default Dosen
             'bimbingan' => collect([]),
             'totalBimbingan' => 0,
             'bimbinganOngoing' => 0,
@@ -58,7 +55,6 @@ class HomeController extends Controller
             'PTdiproses' => 0,
             'PTditerima' => 0,
             'PTditolak' => 0,
-            // Default Mahasiswa
             'totalSuratTTD' => 0,
             'belumTTD' => 0,
             'sudahTTD' => 0,
@@ -66,10 +62,9 @@ class HomeController extends Controller
         ];
 
         // 3. Definisi Nama Tabel
-        $tabelNilaiSkripsi = 'nilai_skripsi'; // Tabel untuk cek kelulusan (4 nilai)
-        $tabelSempro = 'nilai_sempro';        // Tabel untuk cek syarat Ongoing (Status Diterima)
+        $tabelNilaiSkripsi = 'nilai_skripsi'; 
+        $tabelSempro = 'nilai_sempro';        
 
-        // 4. Flag Processed
         $isDekanatProcessed = false;
         $isKaprodiProcessed = false;
         $isDosenProcessed = false;
@@ -84,12 +79,11 @@ class HomeController extends Controller
             // ==========================================
             if (!$isDekanatProcessed && array_intersect(['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'], $userRole)) {
                 
-                // A. Statistik Surat
                 $suratTTD = Letter::whereHas('mahasiswa.fakultas', function ($q) use ($fakultas) { $q->where('fakultas.id', $fakultas); })->get();
                 $suratPT = PermohonanTugas::whereHas('dosen.fakultas', function ($q) use ($fakultas) { $q->where('fakultas.id', $fakultas); })->get();
                 $statsSurat = $this->getStats($suratTTD, $suratPT);
 
-                // B. Chart Data (Logic Baru: Base Table = nilai_sempro)
+                // Chart Data
                 $prodiFakultas = \App\Models\ProgramStudi::where('id_fakultas', $fakultas)->get();
                 $chartLabels = []; $chartData = [];
                 
@@ -97,40 +91,38 @@ class HomeController extends Controller
                     $count = DB::table($tabelSempro)
                         ->join('users_pivot', "$tabelSempro.id_mahasiswa", '=', 'users_pivot.id_user')
                         ->where('users_pivot.id_program_studi', $p->id)
-                        ->where("$tabelSempro.status", 'Diterima') // Filter: Hanya yang Diterima
+                        ->where("$tabelSempro.status", 'Diterima') 
                         ->distinct("$tabelSempro.id_mahasiswa")
                         ->count();
                     $chartLabels[] = $p->nama; $chartData[] = $count;
                 }
 
-                // C. Monitoring Dosen
+                // Monitoring Dosen
                 $allDosenFakultas = User::whereHas('pivot', function ($q) use ($fakultas) {
                     $q->where('id_fakultas', $fakultas)->whereHas('role', function ($rq) { $rq->where('nama', 'dosen'); });
                 })->with('pivot.programStudi')->get();
                 
                 $idDosenArray = $allDosenFakultas->pluck('id')->toArray();
 
-                // D. Query Bimbingan (Logic Baru: Base Table = nilai_sempro)
                 $bimbinganRecords = DB::table($tabelSempro)
                     ->join('users as mhs', "$tabelSempro.id_mahasiswa", '=', 'mhs.id')
-                    
-                    // LEFT JOIN ke bimbingan_skripsi (Agar mhs tanpa pembimbing tetap terambil datanya secara teori)
-                    // Namun nanti difilter whereIn id_pembimbing untuk mapping ke dosen.
+                    // Relasi Dosen: Ambil dari nilai_sempro
+                    ->join('users as dsn', "$tabelSempro.id_pembimbing_1", '=', 'dsn.id')
+                    // Left Join
                     ->leftJoin('bimbingan_skripsi', "$tabelSempro.id_mahasiswa", '=', 'bimbingan_skripsi.id_mahasiswa')
-                    
-                    // LEFT JOIN ke nilai_skripsi (Untuk cek Finished)
                     ->leftJoin($tabelNilaiSkripsi, "$tabelSempro.id_mahasiswa", '=', "$tabelNilaiSkripsi.id_mahasiswa")
                     
-                    // Filter Wajib: Sempro Diterima
                     ->where("$tabelSempro.status", 'Diterima')
-                    
-                    // Filter untuk List Dosen (Hanya ambil yang punya pembimbing di fakultas ini)
-                    ->whereIn('bimbingan_skripsi.id_pembimbing', $idDosenArray)
+                    ->whereIn("$tabelSempro.id_pembimbing_1", $idDosenArray)
                     
                     ->select(
-                        'bimbingan_skripsi.*', // Ambil data bimbingan (termasuk id_pembimbing)
+                        // PERBAIKAN JUDUL: Ambil dari bimbingan, kalau null ambil dari proposal sempro
+                        DB::raw("COALESCE(bimbingan_skripsi.judul_skripsi, $tabelSempro.judul_proposal) as judul_skripsi"),
+                        'bimbingan_skripsi.sesi',          
                         'mhs.name',
                         'mhs.nim_nip_nidn',
+                        'dsn.id as id_pembimbing_real',    
+                        'dsn.name as nama_dosen',          
                         DB::raw("CASE WHEN 
                             $tabelNilaiSkripsi.nilai_pembimbing_1 IS NOT NULL AND 
                             $tabelNilaiSkripsi.nilai_pembimbing_2 IS NOT NULL AND 
@@ -138,16 +130,10 @@ class HomeController extends Controller
                             $tabelNilaiSkripsi.nilai_penguji_2 IS NOT NULL 
                             THEN 1 ELSE 0 END as is_finished")
                     )
-                    // Pastikan ambil data terbaru jika ada duplikat di bimbingan_skripsi
-                    ->whereIn('bimbingan_skripsi.id', function ($query) use ($idDosenArray) {
-                        $query->selectRaw('MAX(id)')->from('bimbingan_skripsi')
-                            ->whereIn('id_pembimbing', $idDosenArray)
-                            ->groupBy('id_mahasiswa', 'id_pembimbing');
-                    })->get();
+                    ->get();
 
-                // Mapping Data ke Dosen (Unique Name)
                 $monitoringDekanat = $allDosenFakultas->map(function ($dosen) use ($bimbinganRecords) {
-                    $mhs = $bimbinganRecords->where('id_pembimbing', $dosen->id);
+                    $mhs = $bimbinganRecords->where('id_pembimbing_real', $dosen->id);
                     $mhs = $mhs->unique('name'); 
 
                     return (object)[
@@ -182,23 +168,21 @@ class HomeController extends Controller
                 })->get();
                 $idDosenArray = $dosenProdi->pluck('id')->toArray();
 
-                // Query Bimbingan (Base: Nilai Sempro)
                 $allBimbingan = DB::table($tabelSempro)
                     ->join('users as mhs', "$tabelSempro.id_mahasiswa", '=', 'mhs.id')
-                    // Left Join Bimbingan (Ambil info dosen)
+                    ->join('users as dsn', "$tabelSempro.id_pembimbing_1", '=', 'dsn.id')
                     ->leftJoin('bimbingan_skripsi', "$tabelSempro.id_mahasiswa", '=', 'bimbingan_skripsi.id_mahasiswa')
-                    // Join user Dosen (untuk ambil nama dosen)
-                    ->join('users as dsn', 'bimbingan_skripsi.id_pembimbing', '=', 'dsn.id')
-                    // Left Join Nilai Skripsi (Cek Finished)
                     ->leftJoin($tabelNilaiSkripsi, "$tabelSempro.id_mahasiswa", '=', "$tabelNilaiSkripsi.id_mahasiswa")
                     
                     ->where("$tabelSempro.status", 'Diterima')
-                    ->whereIn('bimbingan_skripsi.id_pembimbing', $idDosenArray)
+                    ->whereIn("$tabelSempro.id_pembimbing_1", $idDosenArray)
                     
                     ->select(
-                        'bimbingan_skripsi.*',
+                        // PERBAIKAN JUDUL
+                        DB::raw("COALESCE(bimbingan_skripsi.judul_skripsi, $tabelSempro.judul_proposal) as judul_skripsi"),
+                        'bimbingan_skripsi.sesi',
                         'mhs.name as nama_mahasiswa', 'mhs.nim_nip_nidn as nim_mahasiswa',
-                        'dsn.name as nama_dosen', 'dsn.id as id_dosen',
+                        'dsn.name as nama_dosen', 'dsn.id as id_dosen_real',
                         DB::raw("CASE WHEN 
                             $tabelNilaiSkripsi.nilai_pembimbing_1 IS NOT NULL AND 
                             $tabelNilaiSkripsi.nilai_pembimbing_2 IS NOT NULL AND 
@@ -206,14 +190,10 @@ class HomeController extends Controller
                             $tabelNilaiSkripsi.nilai_penguji_2 IS NOT NULL 
                             THEN 1 ELSE 0 END as is_finished")
                     )
-                    ->whereIn('bimbingan_skripsi.id', function ($query) use ($idDosenArray) {
-                        $query->selectRaw('MAX(id)')->from('bimbingan_skripsi')
-                            ->whereIn('id_pembimbing', $idDosenArray)
-                            ->groupBy('id_mahasiswa', 'id_pembimbing');
-                    })->get();
+                    ->get();
 
                 $monitoringDosen = $dosenProdi->map(function ($dosen) use ($allBimbingan) {
-                    $mhsBimbingan = $allBimbingan->where('id_dosen', $dosen->id);
+                    $mhsBimbingan = $allBimbingan->where('id_dosen_real', $dosen->id);
                     $mhsBimbingan = $mhsBimbingan->unique('nama_mahasiswa');
 
                     return (object)[
@@ -226,7 +206,6 @@ class HomeController extends Controller
                     ];
                 });
 
-                // Hitung ulang statistik prodi
                 $allUniqueMhs = $allBimbingan->unique('nama_mahasiswa');
 
                 $statsProdi = [
@@ -253,19 +232,20 @@ class HomeController extends Controller
                     'PTditolak' => $suratPT->where("status", "Ditolak")->count(),
                 ];
 
-                // Query Bimbingan (Base: Nilai Sempro)
                 $bimbingan = DB::table($tabelSempro)
                     ->join('users', "$tabelSempro.id_mahasiswa", '=', 'users.id')
                     ->leftJoin('bimbingan_skripsi', "$tabelSempro.id_mahasiswa", '=', 'bimbingan_skripsi.id_mahasiswa')
                     ->leftJoin($tabelNilaiSkripsi, "$tabelSempro.id_mahasiswa", '=', "$tabelNilaiSkripsi.id_mahasiswa")
                     
                     ->where("$tabelSempro.status", 'Diterima')
-                    ->where('bimbingan_skripsi.id_pembimbing', $user->id)
+                    // Filter: Dosen Pembimbing Sesuai Login
+                    ->where("$tabelSempro.id_pembimbing_1", $user->id)
                     
                     ->select(
                         'users.name as nama_mahasiswa',
                         'users.nim_nip_nidn as nim',
-                        'bimbingan_skripsi.judul_skripsi',
+                        // PERBAIKAN JUDUL
+                        DB::raw("COALESCE(bimbingan_skripsi.judul_skripsi, $tabelSempro.judul_proposal) as judul_skripsi"),
                         'bimbingan_skripsi.sesi as jumlah_bimbingan',
                         DB::raw("CASE WHEN 
                             $tabelNilaiSkripsi.nilai_pembimbing_1 IS NOT NULL AND 
@@ -274,12 +254,9 @@ class HomeController extends Controller
                             $tabelNilaiSkripsi.nilai_penguji_2 IS NOT NULL 
                             THEN 1 ELSE 0 END as is_finished")
                     )
-                    ->whereIn('bimbingan_skripsi.id', function ($query) use ($user) {
-                        $query->selectRaw('MAX(id)')->from('bimbingan_skripsi')
-                            ->where('id_pembimbing', $user->id)
-                            ->groupBy('id_mahasiswa');
-                    })->get();
+                    ->get();
 
+                // Unique di PHP Collection
                 $bimbingan = $bimbingan->unique('nama_mahasiswa');
 
                 $statsBimbingan = [
@@ -305,7 +282,7 @@ class HomeController extends Controller
                     'ditolakTTD' => $suratTTD->where("status", 'Ditolak')->count(),
                 ]);
 
-                // Logika Deadline Mahasiswa
+                // Logika Deadline
                 $dataSempro = PendaftaranSempro::where('id_mahasiswa', $user->id)->where('status', 'diterima')->with('periodeSempro')->first();
                 $deadlineSempro = null;
                 if ($dataSempro) {
