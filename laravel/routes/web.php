@@ -331,6 +331,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
             });
         });
 
+        Route::middleware('role:admin_prodi')->group(function() {
+            Route::get('/api/analisis/performa-akademik', [App\Http\Controllers\AnalisisPerformaAkademikController::class, 'data'])->name('analisis.performa-akademik.data');
+            Route::get('/api/analisis/tepat-waktu-smt8', [App\Http\Controllers\AnalisisPerformaAkademikController::class, 'tepatWaktuSmt8'])->name('analisis.tepat-waktu-smt8');
+            Route::get('/api/analisis/sebaran-jenis-ta', [App\Http\Controllers\AnalisisPerformaAkademikController::class, 'sebaranJenisTugasAkhir'])->name('analisis.sebaran-jenis-ta');
+            Route::get('/api/monitoring-dosen/{dosen}/mahasiswa-excel', [App\Http\Controllers\MonitoringDosenExportController::class, 'exportMahasiswa'])->name('monitoring.dosen.mahasiswa.excel');
+        });
+
         Route::get('/image/{filename}', [FileController::class, 'showImage'])->name('image.show');
     });
 });

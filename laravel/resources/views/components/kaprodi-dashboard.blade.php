@@ -1,4 +1,4 @@
-@props(['totalDosen', 'totalMhs', 'prodiOngoing', 'prodiSelesai', 'monitoringDosen'])
+@props(['totalDosen', 'totalMhs', 'prodiOngoing', 'prodiSelesai', 'monitoringDosen', 'showAnalisis' => false, 'showExport' => false])
 
 <hr>
 <div class="row mt-4">
@@ -50,6 +50,67 @@
     </div>
 </div>
 
+@if ($showAnalisis)
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between flex-wrap">
+                <h3 class="mb-0">Analisis Performa Akademik</h3>
+                <div class="d-flex align-items-center">
+                    <div class="btn-group mr-3" role="group" aria-label="Periode">
+                        <button type="button" class="btn btn-secondary" id="apBtnPeriodeJanJun" data-periode="jan-jun">Jan - Jun</button>
+                        <button type="button" class="btn btn-outline-primary" id="apBtnPeriodeJulDes" data-periode="jul-des">Jul - Des</button>
+                    </div>
+
+                    <select class="form-control" id="apSelectYear" style="width: 90px;">
+                        @for ($y = now()->year; $y >= now()->year - 5; $y--)
+                            <option value="{{ $y }}">{{ $y }}</option>
+                        @endfor
+                    </select>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap">
+                        <h5 class="m-0 font-weight-bold">Metrik Efektivitas Akademik</h5>
+                        <div class="btn-group" role="group" aria-label="Metrik">
+                            <button type="button" class="btn btn-outline-primary" id="apBtnMetricLama" data-metric="lama_skripsi">Lama Skripsi</button>
+                            <button type="button" class="btn btn-primary" id="apBtnMetricIntensitas" data-metric="intensitas_bimbingan">Intensitas Bimbingan</button>
+                        </div>
+                    </div>
+
+                    <div class="mt-4" style="height: 320px;">
+                        <canvas id="apPerformaChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="m-0 font-weight-bold">Persentase Lulus Tepat Waktu (Smt 8)</h5>
+                </div>
+                <div class="card-body" style="height: 320px;">
+                    <canvas id="apTepatWaktuChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="m-0 font-weight-bold">Sebaran Jenis Tugas Akhir</h5>
+                </div>
+                <div class="card-body" style="height: 320px;">
+                    <canvas id="apJenisTAChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
+
 {{-- MONITORING DOSEN SECTION --}}
 <div class="row mt-4 mb-3">
     <div class="col-12">
@@ -81,6 +142,7 @@
                         :ongoing="$dsn->ongoing" 
                         :finished="$dsn->finished" 
                         parent="#desktop-dosen-accordion"
+                        :exportUrl="$showExport ? route('monitoring.dosen.mahasiswa.excel', ['dosen' => $dsn->id]) : null"
                     >
                         @if($dsn->students->count() > 0)
                             @foreach($dsn->students as $mhs)
@@ -122,6 +184,7 @@
                             :ongoing="$dsn->ongoing" 
                             :finished="$dsn->finished" 
                             parent="#mobile-dosen-accordion"
+                            :exportUrl="$showExport ? route('monitoring.dosen.mahasiswa.excel', ['dosen' => $dsn->id]) : null"
                         >
                             @foreach($dsn->students as $mhs)
                                 @php 

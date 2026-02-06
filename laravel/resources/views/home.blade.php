@@ -155,6 +155,200 @@
                 }
             @endif
 
+            // --- 4b. ANALISIS PERFORMA AKADEMIK (ADMIN_PRODI ONLY) ---
+            @if (in_array('admin_prodi', $userRole))
+                if ($('#apPerformaChart').length) {
+                    var apPeriode = (new Date().getMonth() + 1) <= 6 ? 'jan-jun' : 'jul-des';
+                    var apMetric = 'intensitas_bimbingan';
+                    var apYear = parseInt($('#apSelectYear').val(), 10) || (new Date().getFullYear());
+                    var apChart = null;
+
+                    function apSetPeriodeButtons() {
+                        var isJanJun = apPeriode === 'jan-jun';
+                        $('#apBtnPeriodeJanJun')
+                            .toggleClass('btn-secondary', isJanJun)
+                            .toggleClass('btn-outline-secondary', !isJanJun);
+                        $('#apBtnPeriodeJulDes')
+                            .toggleClass('btn-primary', !isJanJun)
+                            .toggleClass('btn-outline-primary', isJanJun);
+                    }
+
+                    function apSetMetricButtons() {
+                        var isLama = apMetric === 'lama_skripsi';
+                        $('#apBtnMetricLama')
+                            .toggleClass('btn-primary', isLama)
+                            .toggleClass('btn-outline-primary', !isLama);
+                        $('#apBtnMetricIntensitas')
+                            .toggleClass('btn-primary', !isLama)
+                            .toggleClass('btn-outline-primary', isLama);
+                    }
+
+                    function apTitle() {
+                        return apMetric === 'lama_skripsi'
+                            ? 'Rata-rata Lama Skripsi (bulan)'
+                            : 'Rata-rata Intensitas Bimbingan (per Mahasiswa Aktif)';
+                    }
+
+                    function apFetchAndRender() {
+                        $.get(@json(route('analisis.performa-akademik.data')), {
+                            year: apYear,
+                            periode: apPeriode,
+                            metric: apMetric
+                        }).done(function (res) {
+                            var ctx = document.getElementById('apPerformaChart').getContext('2d');
+                            if (apChart) {
+                                apChart.destroy();
+                            }
+
+                            var isBar = apMetric === 'intensitas_bimbingan';
+                            var dataset = isBar ? {
+                                label: apTitle(),
+                                data: res.values || [],
+                                backgroundColor: 'rgba(60, 141, 188, 0.9)',
+                                borderWidth: 1
+                            } : {
+                                label: apTitle(),
+                                data: res.values || [],
+                                borderColor: 'rgba(60, 141, 188, 0.9)',
+                                backgroundColor: 'rgba(60, 141, 188, 0.15)',
+                                borderWidth: 3,
+                                fill: false,
+                                tension: 0.35,
+                                pointRadius: 5,
+                                pointHoverRadius: 6,
+                                pointBackgroundColor: '#ffffff',
+                                pointBorderColor: 'rgba(60, 141, 188, 0.9)',
+                                pointBorderWidth: 2
+                            };
+
+                            apChart = new Chart(ctx, {
+                                type: isBar ? 'bar' : 'line',
+                                data: {
+                                    labels: res.labels || [],
+                                    datasets: [dataset]
+                                },
+                                options: {
+                                    maintainAspectRatio: false,
+                                    responsive: true,
+                                    scales: {
+                                        y: { beginAtZero: true }
+                                    },
+                                    plugins: {
+                                        legend: { display: false }
+                                    }
+                                }
+                            });
+                        }).fail(function (xhr) {
+                            console.error('Failed to fetch academic performance data', xhr);
+                        });
+                    }
+
+                    $('#apBtnPeriodeJanJun, #apBtnPeriodeJulDes').on('click', function () {
+                        apPeriode = $(this).data('periode');
+                        apSetPeriodeButtons();
+                        apFetchAndRender();
+                    });
+
+                    $('#apBtnMetricLama, #apBtnMetricIntensitas').on('click', function () {
+                        apMetric = $(this).data('metric');
+                        apSetMetricButtons();
+                        apFetchAndRender();
+                    });
+
+                    $('#apSelectYear').on('change', function () {
+                        apYear = parseInt($(this).val(), 10);
+                        apFetchAndRender();
+                    });
+
+                    apSetPeriodeButtons();
+                    apSetMetricButtons();
+                    apFetchAndRender();
+                }
+
+                if ($('#apTepatWaktuChart').length) {
+                    var apTepatWaktuChart = null;
+
+                    function apFetchTepatWaktu() {
+                        $.get(@json(route('analisis.tepat-waktu-smt8')))
+                            .done(function (res) {
+                                var tepat = parseInt(res.tepat_waktu || 0, 10);
+                                var terlambat = parseInt(res.terlambat || 0, 10);
+
+                                var ctx = document.getElementById('apTepatWaktuChart').getContext('2d');
+                                if (apTepatWaktuChart) {
+                                    apTepatWaktuChart.destroy();
+                                }
+
+                                apTepatWaktuChart = new Chart(ctx, {
+                                    type: 'doughnut',
+                                    data: {
+                                        labels: ['Tepat Waktu', 'Terlambat'],
+                                        datasets: [{
+                                            data: [tepat, terlambat],
+                                            backgroundColor: ['#28a745', '#fd7e14'],
+                                        }]
+                                    },
+                                    options: {
+                                        maintainAspectRatio: false,
+                                        responsive: true,
+                                        plugins: {
+                                            legend: { display: true, position: 'bottom' }
+                                        },
+                                        cutout: '60%'
+                                    }
+                                });
+                            })
+                            .fail(function (xhr) {
+                                console.error('Failed to fetch tepat waktu smt8 data', xhr);
+                            });
+                    }
+
+                    apFetchTepatWaktu();
+                }
+
+                if ($('#apJenisTAChart').length) {
+                    var apJenisTAChart = null;
+                    var apPalette = ['#007bff', '#28a745', '#fd7e14', '#17a2b8', '#ffc107', '#6f42c1', '#dc3545', '#6c757d'];
+
+                    function apFetchJenisTA() {
+                        $.get(@json(route('analisis.sebaran-jenis-ta')))
+                            .done(function (res) {
+                                var labels = res.labels || [];
+                                var values = res.values || [];
+                                var colors = labels.map(function (_, i) { return apPalette[i % apPalette.length]; });
+
+                                var ctx = document.getElementById('apJenisTAChart').getContext('2d');
+                                if (apJenisTAChart) {
+                                    apJenisTAChart.destroy();
+                                }
+
+                                apJenisTAChart = new Chart(ctx, {
+                                    type: 'pie',
+                                    data: {
+                                        labels: labels,
+                                        datasets: [{
+                                            data: values,
+                                            backgroundColor: colors,
+                                        }]
+                                    },
+                                    options: {
+                                        maintainAspectRatio: false,
+                                        responsive: true,
+                                        plugins: {
+                                            legend: { display: true, position: 'bottom' }
+                                        }
+                                    }
+                                });
+                            })
+                            .fail(function (xhr) {
+                                console.error('Failed to fetch sebaran jenis TA data', xhr);
+                            });
+                    }
+
+                    apFetchJenisTA();
+                }
+            @endif
+
             // --- 5. LOGIKA FILTER STATUS (LOKAL CHILD) ---
             $(document).on('click', '.btn-filter-inner', function(e) {
                 e.preventDefault();
@@ -329,7 +523,7 @@
     @if (array_intersect(['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'], $userRole))
         <x-dekanat-dashboard :monitoringDekanat="$monitoringDekanat" />
     @elseif (array_intersect(['kaprodi', 'sekprodi', 'admin_prodi'], $userRole))
-        <x-kaprodi-dashboard :totalDosen="$totalDosen" :totalMhs="$totalMhs" :prodiOngoing="$prodiOngoing" :prodiSelesai="$prodiSelesai" :monitoringDosen="$monitoringDosen" />
+        <x-kaprodi-dashboard :totalDosen="$totalDosen" :totalMhs="$totalMhs" :prodiOngoing="$prodiOngoing" :prodiSelesai="$prodiSelesai" :monitoringDosen="$monitoringDosen" :showAnalisis="in_array('admin_prodi', $userRole)" :showExport="in_array('admin_prodi', $userRole)" />
 
 
         {{-- 4. DOSEN DASHBOARD --}}

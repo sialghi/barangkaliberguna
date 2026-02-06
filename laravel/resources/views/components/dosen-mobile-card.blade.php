@@ -1,4 +1,4 @@
-@props(['id', 'name', 'prodi', 'count', 'ongoing', 'finished', 'parent' => null])
+@props(['id', 'name', 'prodi', 'count', 'ongoing', 'finished', 'parent' => null, 'exportUrl' => null])
 
 <div class="card mb-3 border shadow-sm mobile-card" style="border-radius: 8px;" {{ $attributes }}>
     <div class="card-header bg-white p-3 collapsed" data-toggle="collapse" data-target="#mobile-collapse-{{ $id }}"
@@ -29,6 +29,12 @@
                 <button type="button" class="btn btn-secondary btn-sm btn-filter-inner shadow-sm"
                     data-target="#mobile-collapse-{{ $id }}" data-filter="ongoing">Ongoing</button>
             </div>
+
+            @if ($exportUrl)
+                <a href="{{ $exportUrl }}" class="btn btn-success btn-sm w-100 mb-3">
+                    <i class="fas fa-file-excel mr-1"></i> Download Excel
+                </a>
+            @endif
 
             <div class="student-list">
                 {{ $slot }}
