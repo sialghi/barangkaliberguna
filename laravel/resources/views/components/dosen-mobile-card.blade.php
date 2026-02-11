@@ -20,7 +20,14 @@
 
     <div id="mobile-collapse-{{ $id }}" class="collapse" @if($parent) data-parent="{{ $parent }}" @endif>
         <div class="card-body bg-light p-3 border-top">
-            <h6 class="font-weight-bold mb-3 small text-dark">Daftar Mahasiswa ({{ $count }})</h6>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="font-weight-bold mb-0 small text-dark">Daftar Mahasiswa ({{ $count }})</h6>
+                @if(!empty($exportUrl))
+                    <a href="{{ $exportUrl }}" class="btn btn-success btn-sm" target="_blank" rel="noopener">
+                        <i class="fas fa-file-excel mr-1"></i> Export
+                    </a>
+                @endif
+            </div>
             <div class="btn-group w-100 mb-3" role="group">
                 <button type="button" class="btn btn-primary btn-sm btn-filter-inner shadow-sm"
                     data-target="#mobile-collapse-{{ $id }}" data-filter="all">Semua</button>
@@ -29,12 +36,6 @@
                 <button type="button" class="btn btn-secondary btn-sm btn-filter-inner shadow-sm"
                     data-target="#mobile-collapse-{{ $id }}" data-filter="ongoing">Ongoing</button>
             </div>
-
-            @if ($exportUrl)
-                <a href="{{ $exportUrl }}" class="btn btn-success btn-sm w-100 mb-3">
-                    <i class="fas fa-file-excel mr-1"></i> Download Excel
-                </a>
-            @endif
 
             <div class="student-list">
                 {{ $slot }}

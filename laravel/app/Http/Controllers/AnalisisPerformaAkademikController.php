@@ -40,77 +40,6 @@ class AnalisisPerformaAkademikController extends Controller
         ]);
     }
 
-    public function tepatWaktuSmt8()
-    {
-        // Definisi: tepat waktu jika sidang skripsi (tanggal_ujian) terjadi <= 48 bulan dari awal kuliah.
-        // Angkatan diambil dari 2 digit pada posisi ke-3..4 NIM (contoh: 1123091 -> "23" => 2023).
-        // Awal kuliah diasumsikan 1 September tahun angkatan.
-
-        [$fakultasId, $programStudiId] = $this->getScopeForUser();
-
-        $firstUjianPerMhs = DB::table('nilai_skripsi')
-            ->whereNull('deleted_at')
-            ->selectRaw('id_mahasiswa, MIN(tanggal_ujian) as tanggal_ujian')
-            ->groupBy('id_mahasiswa');
-
-        // MySQL/MariaDB: SUBSTRING(str, 3, 2) (1-indexed)
-        $angkatan2Digit = "SUBSTRING(u.nim_nip_nidn, 3, 2)";
-        $angkatanYear = "(2000 + CAST($angkatan2Digit AS UNSIGNED))";
-        $startKuliah = "STR_TO_DATE(CONCAT($angkatanYear, '-09-01'), '%Y-%m-%d')";
-        $diffMonths = "TIMESTAMPDIFF(MONTH, $startKuliah, fu.tanggal_ujian)";
-
-        $row = DB::query()
-            ->fromSub($firstUjianPerMhs, 'fu')
-            ->join('users as u', 'fu.id_mahasiswa', '=', 'u.id')
-            ->join('users_pivot as up', 'u.id', '=', 'up.id_user')
-            ->whereNull('u.deleted_at')
-            ->whereNull('up.deleted_at')
-            ->whereRaw('LENGTH(u.nim_nip_nidn) >= 4')
-            ->whereRaw("$angkatan2Digit REGEXP '^[0-9]{2}$'")
-            ->when($fakultasId, function ($q) use ($fakultasId) {
-                return $q->where('up.id_fakultas', $fakultasId);
-            })
-            ->when($programStudiId, function ($q) use ($programStudiId) {
-                return $q->where('up.id_program_studi', $programStudiId);
-            })
-            ->selectRaw("SUM(CASE WHEN $diffMonths <= 48 THEN 1 ELSE 0 END) as tepat_waktu")
-            ->selectRaw("SUM(CASE WHEN $diffMonths > 48 THEN 1 ELSE 0 END) as terlambat")
-            ->first();
-
-        return response()->json([
-            'tepat_waktu' => (int) ($row->tepat_waktu ?? 0),
-            'terlambat' => (int) ($row->terlambat ?? 0),
-        ]);
-    }
-
-    public function sebaranJenisTugasAkhir()
-    {
-        [$fakultasId, $programStudiId] = $this->getScopeForUser();
-
-        $rows = DB::table('pendaftaran_skripsi as ps')
-            ->join('users_pivot as up', 'ps.id_mahasiswa', '=', 'up.id_user')
-            ->leftJoin('kategori_ta as kt', 'ps.id_kategori_ta', '=', 'kt.id')
-            ->whereNull('ps.deleted_at')
-            ->whereNull('up.deleted_at')
-            ->when($fakultasId, function ($q) use ($fakultasId) {
-                return $q->where('up.id_fakultas', $fakultasId);
-            })
-            ->when($programStudiId, function ($q) use ($programStudiId) {
-                return $q->where('up.id_program_studi', $programStudiId);
-            })
-            ->where('ps.status', '!=', 'Ditolak')
-            ->selectRaw("COALESCE(kt.nama, 'Belum Ditentukan') as label")
-            ->selectRaw('COUNT(DISTINCT ps.id_mahasiswa) as total')
-            ->groupBy('label')
-            ->orderByDesc('total')
-            ->get();
-
-        return response()->json([
-            'labels' => $rows->pluck('label')->values(),
-            'values' => $rows->pluck('total')->map(fn ($v) => (int) $v)->values(),
-        ]);
-    }
-
     private function getPeriodeDefinition(string $periode): array
     {
         $bulan = [
@@ -210,5 +139,4 @@ class AnalisisPerformaAkademikController extends Controller
             return [(int) $key => (float) $value];
         })->toArray();
     }
-
 }

@@ -1,4 +1,4 @@
-@props(['totalDosen', 'totalMhs', 'prodiOngoing', 'prodiSelesai', 'monitoringDosen', 'showAnalisis' => false, 'showExport' => false])
+@props(['totalDosen', 'totalMhs', 'prodiOngoing', 'prodiSelesai', 'monitoringDosen', 'showAnalisis' => false])
 
 <hr>
 <div class="row mt-4">
@@ -84,27 +84,31 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <div class="row mt-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="m-0 font-weight-bold">Persentase Lulus Tepat Waktu (Smt 8)</h5>
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <x-chart-card title="Persentase Lulus Tepat Waktu (Smt 9)" id="prodiOnTimeChart">
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-circle text-success"></i> Lulus Tepat Waktu</li>
+                            <li><i class="fas fa-circle text-danger"></i> Terlambat</li>
+                        </ul>
+                    </x-chart-card>
                 </div>
-                <div class="card-body" style="height: 320px;">
-                    <canvas id="apTepatWaktuChart"></canvas>
+                <div class="col-md-6">
+                    <x-chart-card title="Sebaran Jenis Tugas Akhir" id="prodiKategoriTaChart">
+                        <ul class="list-unstyled" id="prodiKategoriTaLegend"></ul>
+                    </x-chart-card>
                 </div>
             </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="m-0 font-weight-bold">Sebaran Jenis Tugas Akhir</h5>
+
+            <div class="card mt-3">
+                <div class="card-header border-0">
+                    <h3 class="card-title font-weight-bold">Monitoring Beban Dosen</h3>
                 </div>
-                <div class="card-body" style="height: 320px;">
-                    <canvas id="apJenisTAChart"></canvas>
+                <div class="card-body">
+                    <div style="height: 320px;">
+                        <canvas id="prodiBebanDosenChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -117,6 +121,10 @@
         <h3>Monitoring Dosen</h3>
     </div>
 </div>
+
+@php
+    $canExportMonitoringDosen = in_array('admin_prodi', auth()->user()->roles->pluck('nama')->toArray());
+@endphp
 
 <div class="row">
     <div class="col-12">
@@ -142,7 +150,7 @@
                         :ongoing="$dsn->ongoing" 
                         :finished="$dsn->finished" 
                         parent="#desktop-dosen-accordion"
-                        :exportUrl="$showExport ? route('monitoring.dosen.mahasiswa.excel', ['dosen' => $dsn->id]) : null"
+                        :exportUrl="$canExportMonitoringDosen ? route('export.monitoring.dosen', ['dosen' => $dsn->id]) : null"
                     >
                         @if($dsn->students->count() > 0)
                             @foreach($dsn->students as $mhs)
@@ -184,7 +192,7 @@
                             :ongoing="$dsn->ongoing" 
                             :finished="$dsn->finished" 
                             parent="#mobile-dosen-accordion"
-                            :exportUrl="$showExport ? route('monitoring.dosen.mahasiswa.excel', ['dosen' => $dsn->id]) : null"
+                            :exportUrl="$canExportMonitoringDosen ? route('export.monitoring.dosen', ['dosen' => $dsn->id]) : null"
                         >
                             @foreach($dsn->students as $mhs)
                                 @php 

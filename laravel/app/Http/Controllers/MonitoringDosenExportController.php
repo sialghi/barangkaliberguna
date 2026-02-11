@@ -34,16 +34,29 @@ class MonitoringDosenExportController extends Controller
         $tabelNilaiSkripsi = 'nilai_skripsi';
         $tabelSempro = 'nilai_sempro';
 
+        $bimbinganAgg = DB::table('bimbingan_skripsi')
+            ->whereNull('deleted_at')
+            ->select(
+                'id_mahasiswa',
+                'id_pembimbing',
+                DB::raw('COUNT(*) as jumlah_bimbingan'),
+                DB::raw('MAX(judul_skripsi) as judul_skripsi')
+            )
+            ->groupBy('id_mahasiswa', 'id_pembimbing');
+
         $rows = DB::table($tabelSempro)
             ->join('users as mhs', "$tabelSempro.id_mahasiswa", '=', 'mhs.id')
             ->join('users as dsn', "$tabelSempro.id_pembimbing_1", '=', 'dsn.id')
-            ->leftJoin('bimbingan_skripsi', "$tabelSempro.id_mahasiswa", '=', 'bimbingan_skripsi.id_mahasiswa')
+            ->leftJoinSub($bimbinganAgg, 'bimbingan_skripsi', function ($join) use ($tabelSempro) {
+                $join->on("$tabelSempro.id_mahasiswa", '=', 'bimbingan_skripsi.id_mahasiswa')
+                    ->on("$tabelSempro.id_pembimbing_1", '=', 'bimbingan_skripsi.id_pembimbing');
+            })
             ->leftJoin($tabelNilaiSkripsi, "$tabelSempro.id_mahasiswa", '=', "$tabelNilaiSkripsi.id_mahasiswa")
             ->where("$tabelSempro.status", 'Diterima')
             ->where("$tabelSempro.id_pembimbing_1", $dosenModel->id)
             ->select(
                 DB::raw("COALESCE(bimbingan_skripsi.judul_skripsi, $tabelSempro.judul_proposal) as judul_skripsi"),
-                'bimbingan_skripsi.sesi',
+                DB::raw('COALESCE(bimbingan_skripsi.jumlah_bimbingan, 0) as sesi'),
                 'mhs.name as nama_mahasiswa',
                 'mhs.nim_nip_nidn as nim_mahasiswa',
                 DB::raw("CASE WHEN 

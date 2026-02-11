@@ -200,32 +200,24 @@
                                 apChart.destroy();
                             }
 
-                            var isBar = apMetric === 'intensitas_bimbingan';
-                            var dataset = isBar ? {
-                                label: apTitle(),
-                                data: res.values || [],
-                                backgroundColor: 'rgba(60, 141, 188, 0.9)',
-                                borderWidth: 1
-                            } : {
-                                label: apTitle(),
-                                data: res.values || [],
-                                borderColor: 'rgba(60, 141, 188, 0.9)',
-                                backgroundColor: 'rgba(60, 141, 188, 0.15)',
-                                borderWidth: 3,
-                                fill: false,
-                                tension: 0.35,
-                                pointRadius: 5,
-                                pointHoverRadius: 6,
-                                pointBackgroundColor: '#ffffff',
-                                pointBorderColor: 'rgba(60, 141, 188, 0.9)',
-                                pointBorderWidth: 2
-                            };
-
                             apChart = new Chart(ctx, {
-                                type: isBar ? 'bar' : 'line',
+                                type: 'line',
                                 data: {
                                     labels: res.labels || [],
-                                    datasets: [dataset]
+                                    datasets: [{
+                                        label: apTitle(),
+                                        data: res.values || [],
+                                        borderColor: 'rgba(60, 141, 188, 0.9)',
+                                        backgroundColor: 'rgba(60, 141, 188, 0.15)',
+                                        borderWidth: 3,
+                                        fill: false,
+                                        tension: 0.35,
+                                        pointRadius: 5,
+                                        pointHoverRadius: 6,
+                                        pointBackgroundColor: '#ffffff',
+                                        pointBorderColor: 'rgba(60, 141, 188, 0.9)',
+                                        pointBorderWidth: 2
+                                    }]
                                 },
                                 options: {
                                     maintainAspectRatio: false,
@@ -265,87 +257,94 @@
                     apFetchAndRender();
                 }
 
-                if ($('#apTepatWaktuChart').length) {
-                    var apTepatWaktuChart = null;
+                // --- 4c. CHART TAMBAHAN ADMIN_PRODI (di bawah Analisis) ---
+                var prodiTepatWaktu = @json($chartTepatWaktu ?? null);
+                var prodiKategoriTA = @json($chartKategoriTA ?? null);
+                var prodiBebanDosen = @json($chartBebanDosen ?? null);
 
-                    function apFetchTepatWaktu() {
-                        $.get(@json(route('analisis.tepat-waktu-smt8')))
-                            .done(function (res) {
-                                var tepat = parseInt(res.tepat_waktu || 0, 10);
-                                var terlambat = parseInt(res.terlambat || 0, 10);
-
-                                var ctx = document.getElementById('apTepatWaktuChart').getContext('2d');
-                                if (apTepatWaktuChart) {
-                                    apTepatWaktuChart.destroy();
-                                }
-
-                                apTepatWaktuChart = new Chart(ctx, {
-                                    type: 'doughnut',
-                                    data: {
-                                        labels: ['Tepat Waktu', 'Terlambat'],
-                                        datasets: [{
-                                            data: [tepat, terlambat],
-                                            backgroundColor: ['#28a745', '#fd7e14'],
-                                        }]
-                                    },
-                                    options: {
-                                        maintainAspectRatio: false,
-                                        responsive: true,
-                                        plugins: {
-                                            legend: { display: true, position: 'bottom' }
-                                        },
-                                        cutout: '60%'
-                                    }
-                                });
-                            })
-                            .fail(function (xhr) {
-                                console.error('Failed to fetch tepat waktu smt8 data', xhr);
-                            });
-                    }
-
-                    apFetchTepatWaktu();
+                if ($('#prodiOnTimeChart').length && prodiTepatWaktu) {
+                    var ctxOnTime = document.getElementById('prodiOnTimeChart').getContext('2d');
+                    new Chart(ctxOnTime, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Lulus Tepat Waktu', 'Terlambat'],
+                            datasets: [{
+                                data: [prodiTepatWaktu.tepat || 0, prodiTepatWaktu.terlambat || 0],
+                                backgroundColor: ['#28a745', '#dc3545']
+                            }]
+                        },
+                        options: {
+                            maintainAspectRatio: false,
+                            responsive: true,
+                            plugins: { legend: { display: false } }
+                        }
+                    });
                 }
 
-                if ($('#apJenisTAChart').length) {
-                    var apJenisTAChart = null;
-                    var apPalette = ['#007bff', '#28a745', '#fd7e14', '#17a2b8', '#ffc107', '#6f42c1', '#dc3545', '#6c757d'];
+                if ($('#prodiKategoriTaChart').length && prodiKategoriTA) {
+                    var colors = ['#007bff', '#fd7e14', '#e83e8c', '#28a745', '#6f42c1', '#20c997'];
+                    var labelsK = prodiKategoriTA.labels || [];
+                    var dataK = prodiKategoriTA.data || [];
+                    var bgK = labelsK.map(function (_, i) { return colors[i % colors.length]; });
 
-                    function apFetchJenisTA() {
-                        $.get(@json(route('analisis.sebaran-jenis-ta')))
-                            .done(function (res) {
-                                var labels = res.labels || [];
-                                var values = res.values || [];
-                                var colors = labels.map(function (_, i) { return apPalette[i % apPalette.length]; });
-
-                                var ctx = document.getElementById('apJenisTAChart').getContext('2d');
-                                if (apJenisTAChart) {
-                                    apJenisTAChart.destroy();
-                                }
-
-                                apJenisTAChart = new Chart(ctx, {
-                                    type: 'pie',
-                                    data: {
-                                        labels: labels,
-                                        datasets: [{
-                                            data: values,
-                                            backgroundColor: colors,
-                                        }]
-                                    },
-                                    options: {
-                                        maintainAspectRatio: false,
-                                        responsive: true,
-                                        plugins: {
-                                            legend: { display: true, position: 'bottom' }
-                                        }
-                                    }
-                                });
-                            })
-                            .fail(function (xhr) {
-                                console.error('Failed to fetch sebaran jenis TA data', xhr);
-                            });
+                    var $legend = $('#prodiKategoriTaLegend');
+                    if ($legend.length) {
+                        $legend.empty();
+                        labelsK.forEach(function (label, i) {
+                            var c = bgK[i];
+                            $legend.append('<li><i class="fas fa-circle" style="color:' + c + '"></i> ' + label + '</li>');
+                        });
                     }
 
-                    apFetchJenisTA();
+                    var ctxKategori = document.getElementById('prodiKategoriTaChart').getContext('2d');
+                    new Chart(ctxKategori, {
+                        type: 'pie',
+                        data: {
+                            labels: labelsK,
+                            datasets: [{
+                                data: dataK,
+                                backgroundColor: bgK
+                            }]
+                        },
+                        options: {
+                            maintainAspectRatio: false,
+                            responsive: true,
+                            plugins: { legend: { display: false } }
+                        }
+                    });
+                }
+
+                if ($('#prodiBebanDosenChart').length && prodiBebanDosen) {
+                    var ctxBeban = document.getElementById('prodiBebanDosenChart').getContext('2d');
+                    new Chart(ctxBeban, {
+                        type: 'bar',
+                        data: {
+                            labels: prodiBebanDosen.labels || [],
+                            datasets: [
+                                {
+                                    label: 'Finished',
+                                    data: prodiBebanDosen.finished || [],
+                                    backgroundColor: '#007bff',
+                                    stack: 'beban'
+                                },
+                                {
+                                    label: 'On-Going',
+                                    data: prodiBebanDosen.ongoing || [],
+                                    backgroundColor: '#fd7e14',
+                                    stack: 'beban'
+                                }
+                            ]
+                        },
+                        options: {
+                            maintainAspectRatio: false,
+                            responsive: true,
+                            scales: {
+                                x: { stacked: true },
+                                y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }
+                            },
+                            plugins: { legend: { display: true } }
+                        }
+                    });
                 }
             @endif
 
@@ -523,7 +522,7 @@
     @if (array_intersect(['dekan', 'wadek_satu', 'wadek_dua', 'wadek_tiga', 'admin_dekanat'], $userRole))
         <x-dekanat-dashboard :monitoringDekanat="$monitoringDekanat" />
     @elseif (array_intersect(['kaprodi', 'sekprodi', 'admin_prodi'], $userRole))
-        <x-kaprodi-dashboard :totalDosen="$totalDosen" :totalMhs="$totalMhs" :prodiOngoing="$prodiOngoing" :prodiSelesai="$prodiSelesai" :monitoringDosen="$monitoringDosen" :showAnalisis="in_array('admin_prodi', $userRole)" :showExport="in_array('admin_prodi', $userRole)" />
+        <x-kaprodi-dashboard :totalDosen="$totalDosen" :totalMhs="$totalMhs" :prodiOngoing="$prodiOngoing" :prodiSelesai="$prodiSelesai" :monitoringDosen="$monitoringDosen" :showAnalisis="in_array('admin_prodi', $userRole)" />
 
 
         {{-- 4. DOSEN DASHBOARD --}}

@@ -104,12 +104,25 @@ class HomeController extends Controller
                 
                 $idDosenArray = $allDosenFakultas->pluck('id')->toArray();
 
+                $bimbinganAgg = DB::table('bimbingan_skripsi')
+                    ->whereNull('deleted_at')
+                    ->select(
+                        'id_mahasiswa',
+                        'id_pembimbing',
+                        DB::raw('COUNT(*) as jumlah_bimbingan'),
+                        DB::raw('MAX(judul_skripsi) as judul_skripsi')
+                    )
+                    ->groupBy('id_mahasiswa', 'id_pembimbing');
+
                 $bimbinganRecords = DB::table($tabelSempro)
                     ->join('users as mhs', "$tabelSempro.id_mahasiswa", '=', 'mhs.id')
                     // Relasi Dosen: Ambil dari nilai_sempro
                     ->join('users as dsn', "$tabelSempro.id_pembimbing_1", '=', 'dsn.id')
                     // Left Join
-                    ->leftJoin('bimbingan_skripsi', "$tabelSempro.id_mahasiswa", '=', 'bimbingan_skripsi.id_mahasiswa')
+                    ->leftJoinSub($bimbinganAgg, 'bimbingan_skripsi', function ($join) use ($tabelSempro) {
+                        $join->on("$tabelSempro.id_mahasiswa", '=', 'bimbingan_skripsi.id_mahasiswa')
+                            ->on("$tabelSempro.id_pembimbing_1", '=', 'bimbingan_skripsi.id_pembimbing');
+                    })
                     ->leftJoin($tabelNilaiSkripsi, "$tabelSempro.id_mahasiswa", '=', "$tabelNilaiSkripsi.id_mahasiswa")
                     
                     ->where("$tabelSempro.status", 'Diterima')
@@ -118,7 +131,7 @@ class HomeController extends Controller
                     ->select(
                         // PERBAIKAN JUDUL: Ambil dari bimbingan, kalau null ambil dari proposal sempro
                         DB::raw("COALESCE(bimbingan_skripsi.judul_skripsi, $tabelSempro.judul_proposal) as judul_skripsi"),
-                        'bimbingan_skripsi.sesi',          
+                        DB::raw('COALESCE(bimbingan_skripsi.jumlah_bimbingan, 0) as sesi'),
                         'mhs.name',
                         'mhs.nim_nip_nidn',
                         'dsn.id as id_pembimbing_real',    
@@ -168,10 +181,23 @@ class HomeController extends Controller
                 })->get();
                 $idDosenArray = $dosenProdi->pluck('id')->toArray();
 
+                $bimbinganAgg = DB::table('bimbingan_skripsi')
+                    ->whereNull('deleted_at')
+                    ->select(
+                        'id_mahasiswa',
+                        'id_pembimbing',
+                        DB::raw('COUNT(*) as jumlah_bimbingan'),
+                        DB::raw('MAX(judul_skripsi) as judul_skripsi')
+                    )
+                    ->groupBy('id_mahasiswa', 'id_pembimbing');
+
                 $allBimbingan = DB::table($tabelSempro)
                     ->join('users as mhs', "$tabelSempro.id_mahasiswa", '=', 'mhs.id')
                     ->join('users as dsn', "$tabelSempro.id_pembimbing_1", '=', 'dsn.id')
-                    ->leftJoin('bimbingan_skripsi', "$tabelSempro.id_mahasiswa", '=', 'bimbingan_skripsi.id_mahasiswa')
+                    ->leftJoinSub($bimbinganAgg, 'bimbingan_skripsi', function ($join) use ($tabelSempro) {
+                        $join->on("$tabelSempro.id_mahasiswa", '=', 'bimbingan_skripsi.id_mahasiswa')
+                            ->on("$tabelSempro.id_pembimbing_1", '=', 'bimbingan_skripsi.id_pembimbing');
+                    })
                     ->leftJoin($tabelNilaiSkripsi, "$tabelSempro.id_mahasiswa", '=', "$tabelNilaiSkripsi.id_mahasiswa")
                     
                     ->where("$tabelSempro.status", 'Diterima')
@@ -180,7 +206,7 @@ class HomeController extends Controller
                     ->select(
                         // PERBAIKAN JUDUL
                         DB::raw("COALESCE(bimbingan_skripsi.judul_skripsi, $tabelSempro.judul_proposal) as judul_skripsi"),
-                        'bimbingan_skripsi.sesi',
+                        DB::raw('COALESCE(bimbingan_skripsi.jumlah_bimbingan, 0) as sesi'),
                         'mhs.name as nama_mahasiswa', 'mhs.nim_nip_nidn as nim_mahasiswa',
                         'dsn.name as nama_dosen', 'dsn.id as id_dosen_real',
                         DB::raw("CASE WHEN 
@@ -216,7 +242,69 @@ class HomeController extends Controller
                     'monitoringDosen' => $monitoringDosen
                 ];
 
-                $compactData = array_merge($compactData, $statsSurat, $statsProdi);
+                // ==========================================
+                // CHART TAMBAHAN (ADMIN_PRODI): Tepat Waktu Smt 9, Kategori TA, Beban Dosen
+                // ==========================================
+                $extraCharts = [];
+                if (in_array('admin_prodi', $userRole, true)) {
+                    // 1) Persentase lulus tepat waktu (<= 9 semester) berdasarkan NIM angkatan + waktu_ujian pendaftaran_skripsi
+                    $angkatanExpr = "(2000 + CAST(SUBSTRING(u.nim_nip_nidn, 3, 2) AS UNSIGNED))";
+                    $acadStartExpr = "(CASE WHEN MONTH(ps.waktu_ujian) <= 6 THEN YEAR(ps.waktu_ujian) - 1 ELSE YEAR(ps.waktu_ujian) END)";
+                    $semesterExpr = "(({$acadStartExpr} - {$angkatanExpr}) * 2 + (CASE WHEN MONTH(ps.waktu_ujian) <= 6 THEN 2 ELSE 1 END))";
+
+                    $onTimeRow = DB::table('pendaftaran_skripsi as ps')
+                        ->join('users as u', 'ps.id_mahasiswa', '=', 'u.id')
+                        ->join('users_pivot as up', 'ps.id_mahasiswa', '=', 'up.id_user')
+                        ->whereNull('ps.deleted_at')
+                        ->whereNull('u.deleted_at')
+                        ->whereNull('up.deleted_at')
+                        ->where('up.id_program_studi', $programStudi)
+                        ->where('ps.status', 'Diterima')
+                        ->whereNotNull('ps.waktu_ujian')
+                        ->selectRaw("SUM(CASE WHEN {$semesterExpr} <= 9 THEN 1 ELSE 0 END) as tepat")
+                        ->selectRaw("SUM(CASE WHEN {$semesterExpr} > 9 THEN 1 ELSE 0 END) as terlambat")
+                        ->first();
+
+                    $tepat = (int) ($onTimeRow->tepat ?? 0);
+                    $terlambat = (int) ($onTimeRow->terlambat ?? 0);
+
+                    // 2) Sebaran jenis tugas akhir (kategori_ta) dari pendaftaran_skripsi
+                    $kategoriRows = DB::table('kategori_ta as k')
+                        ->leftJoin('pendaftaran_skripsi as ps', function ($join) {
+                            $join->on('ps.id_kategori_ta', '=', 'k.id')
+                                ->whereNull('ps.deleted_at')
+                                ->whereNotNull('ps.id_kategori_ta')
+                                ->where('ps.status', 'Diterima');
+                        })
+                        ->leftJoin('users_pivot as up', function ($join) use ($programStudi) {
+                            $join->on('ps.id_mahasiswa', '=', 'up.id_user')
+                                ->whereNull('up.deleted_at')
+                                ->where('up.id_program_studi', $programStudi);
+                        })
+                        ->select('k.nama')
+                        ->selectRaw('COUNT(up.id_user) as total')
+                        ->groupBy('k.id', 'k.nama')
+                        ->orderBy('k.id')
+                        ->get();
+
+                    $extraCharts = [
+                        'chartTepatWaktu' => [
+                            'tepat' => $tepat,
+                            'terlambat' => $terlambat,
+                        ],
+                        'chartKategoriTA' => [
+                            'labels' => $kategoriRows->pluck('nama')->toArray(),
+                            'data' => $kategoriRows->pluck('total')->map(fn ($v) => (int) $v)->toArray(),
+                        ],
+                        'chartBebanDosen' => [
+                            'labels' => $monitoringDosen->pluck('nama')->toArray(),
+                            'finished' => $monitoringDosen->pluck('finished')->map(fn ($v) => (int) $v)->toArray(),
+                            'ongoing' => $monitoringDosen->pluck('ongoing')->map(fn ($v) => (int) $v)->toArray(),
+                        ],
+                    ];
+                }
+
+                $compactData = array_merge($compactData, $statsSurat, $statsProdi, $extraCharts);
                 $isKaprodiProcessed = true;
             }
 
@@ -232,9 +320,22 @@ class HomeController extends Controller
                     'PTditolak' => $suratPT->where("status", "Ditolak")->count(),
                 ];
 
+                $bimbinganAgg = DB::table('bimbingan_skripsi')
+                    ->whereNull('deleted_at')
+                    ->select(
+                        'id_mahasiswa',
+                        'id_pembimbing',
+                        DB::raw('COUNT(*) as jumlah_bimbingan'),
+                        DB::raw('MAX(judul_skripsi) as judul_skripsi')
+                    )
+                    ->groupBy('id_mahasiswa', 'id_pembimbing');
+
                 $bimbingan = DB::table($tabelSempro)
                     ->join('users', "$tabelSempro.id_mahasiswa", '=', 'users.id')
-                    ->leftJoin('bimbingan_skripsi', "$tabelSempro.id_mahasiswa", '=', 'bimbingan_skripsi.id_mahasiswa')
+                    ->leftJoinSub($bimbinganAgg, 'bimbingan_skripsi', function ($join) use ($tabelSempro) {
+                        $join->on("$tabelSempro.id_mahasiswa", '=', 'bimbingan_skripsi.id_mahasiswa')
+                            ->on("$tabelSempro.id_pembimbing_1", '=', 'bimbingan_skripsi.id_pembimbing');
+                    })
                     ->leftJoin($tabelNilaiSkripsi, "$tabelSempro.id_mahasiswa", '=', "$tabelNilaiSkripsi.id_mahasiswa")
                     
                     ->where("$tabelSempro.status", 'Diterima')
@@ -246,7 +347,7 @@ class HomeController extends Controller
                         'users.nim_nip_nidn as nim',
                         // PERBAIKAN JUDUL
                         DB::raw("COALESCE(bimbingan_skripsi.judul_skripsi, $tabelSempro.judul_proposal) as judul_skripsi"),
-                        'bimbingan_skripsi.sesi as jumlah_bimbingan',
+                        DB::raw('COALESCE(bimbingan_skripsi.jumlah_bimbingan, 0) as jumlah_bimbingan'),
                         DB::raw("CASE WHEN 
                             $tabelNilaiSkripsi.nilai_pembimbing_1 IS NOT NULL AND 
                             $tabelNilaiSkripsi.nilai_pembimbing_2 IS NOT NULL AND 
